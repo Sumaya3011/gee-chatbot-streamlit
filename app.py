@@ -5,53 +5,70 @@ import streamlit as st
 import ee
 
 from config import YEARS, LOCATION_LAT, LOCATION_LON, LOCATION_NAME
-from gee_utils import get_comparison_images
+from gee_utils import create_dynamic_world_map
 from chat_utils import ask_chatbot
-from ui_components import render_legend
+from ui_components import render_dw_legend
 
 
 # -------------------------
-# 1. PAGE CONFIG
+# 1. PAGE CONFIG & LIGHT CSS
 # -------------------------
 st.set_page_config(
-    page_title="GEE Dynamic World Chatbot",
+    page_title="GEE Chatbot – Dynamic World Explorer",
     page_icon="🌍",
     layout="wide",
 )
 
-st.title("🌍 GEE Dynamic World Chatbot")
-st.caption(
-    "Compare Dynamic World land cover for two years at a fixed location "
-    "and chat with an AI assistant about the changes."
+# Simple CSS to get a similar "card" feeling
+st.markdown(
+    """
+    <style>
+    /* Make background soft like your old radial gradient */
+    .stApp {
+        background: radial-gradient(circle at top left, #e0f2fe, #f9fafb);
+    }
+
+    /* Reduce default padding so it feels more like your HTML layout */
+    .block-container {
+        padding-top: 1rem;
+        padding-bottom: 1rem;
+    }
+
+    /* Style "cards" a bit */
+    .panel-card {
+        background: #ffffff;
+        border-radius: 18px;
+        box-shadow: 0 18px 40px rgba(15, 23, 42, 0.16);
+        padding: 18px 18px 14px;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True,
 )
 
 
 # -------------------------
-# 2. INITIALIZE GOOGLE EARTH ENGINE (SERVICE ACCOUNT)
+# 2. INIT EARTH ENGINE (SERVICE ACCOUNT)
 # -------------------------
-def init_earth_engine():
-    """
-    Initialize Earth Engine using a service account JSON
-    stored in Streamlit secrets as EE_SERVICE_ACCOUNT_JSON.
-    """
+def init_ee():
     if getattr(st.session_state, "ee_initialized", False):
-        return  # Already initialized in this session
+        return
 
-    service_account_json = st.secrets.get("EE_SERVICE_ACCOUNT_JSON", None)
+    service_account_json = st.secrets.get("EE_SERVICE_ACCOUNT_JSON")
     if not service_account_json:
         st.error(
-            "EE_SERVICE_ACCOUNT_JSON is missing. "
-            "Go to Streamlit Cloud -> App -> Settings -> Secrets and add it."
+            "EE_SERVICE_ACCOUNT_JSON is missing.\n\n"
+            "In Streamlit Cloud, open your app → Settings → Secrets and add "
+            "EE_SERVICE_ACCOUNT_JSON with your full service account JSON."
         )
         st.stop()
 
     info = json.loads(service_account_json)
-
-    service_account_email = info["client_email"]
-    project_id = info.get("project_id", None)
+    email = info["client_email"]
+    project_id = info.get("project_id")
 
     credentials = ee.ServiceAccountCredentials(
-        email=service_account_email,
+        email=email,
         key_data=service_account_json,
     )
 
@@ -63,119 +80,248 @@ def init_earth_engine():
     st.session_state.ee_initialized = True
 
 
-init_earth_engine()
+init_ee()
 
-# Define fixed location point
 location_point = ee.Geometry.Point([LOCATION_LON, LOCATION_LAT])
 
 
 # -------------------------
-# 3. SIDEBAR CONTROLS
-# -------------------------
-with st.sidebar:
-    st.header("🧭 Map Settings")
-
-    st.markdown(
-        f"**Location:** {LOCATION_NAME}  \n"
-        f"Lat: `{LOCATION_LAT}`, Lon: `{LOCATION_LON}`"
-    )
-
-    year_a = st.selectbox("Year A (left)", YEARS, index=0)
-    year_b = st.selectbox("Year B (right)", YEARS, index=len(YEARS) - 1)
-
-    generate_map = st.button("🗺️ Generate Map", type="primary")
-
-
-# -------------------------
-# 4. CHAT SESSION STATE
+# 3. SESSION STATE FOR CHAT
 # -------------------------
 if "chat_history" not in st.session_state:
     st.session_state["chat_history"] = [
         {
             "role": "assistant",
             "content": (
-                "Hi! I can help you understand the Dynamic World land cover "
-                "map and the changes between the two years."
+                "Hi! I can help you explore Dynamic World land cover and "
+                "understand changes between two years at this fixed location."
             ),
         }
     ]
 
 
 # -------------------------
-# 5. MAP + LEGEND LAYOUT
+# 4. LAYOUT: LEFT PANEL + RIGHT PANEL (like your HTML)
 # -------------------------
-map_col, legend_col = st.columns([3, 1])
+left_col, right_col = st.columns([0.36, 0.64], gap="large")
 
-with map_col:
-    st.subheader("Dynamic World Comparison")
+# ---------- LEFT PANEL ----------
+with left_col:
+    st.markdown("<div class='panel-card'>", unsafe_allow_html=True)
 
-    if generate_map:
-        with st.spinner("Requesting images from Google Earth Engine..."):
-            try:
-                img_a, img_b = get_comparison_images(location_point, year_a, year_b)
-
-                st.markdown(f"**{LOCATION_NAME}: {year_a} vs {year_b}**")
-
-                col1, col2 = st.columns(2)
-                with col1:
-                    st.image(img_a, caption=f"{year_a}", use_column_width=True)
-                with col2:
-                    st.image(img_b, caption=f"{year_b}", use_column_width=True)
-
-            except Exception as e:
-                st.error(f"Error while getting images from GEE: {e}")
-    else:
-        st.info(
-            "Choose Year A and Year B from the sidebar, "
-            "then click **Generate Map**."
+    # Title row (GEE Chatbot + Beta badge)
+    col_title, col_badge = st.columns([0.7, 0.3])
+    with col_title:
+        st.markdown("### GEE Chatbot")
+    with col_badge:
+        st.markdown(
+            "<span style='font-size:10px;padding:2px 6px;border-radius:999px;"
+            "background:#eff6ff;color:#1d4ed8;font-weight:600;"
+            "text-transform:uppercase;letter-spacing:0.04em;'>Beta</span>",
+            unsafe_allow_html=True,
         )
 
-with legend_col:
-    render_legend()
-
-
-# -------------------------
-# 6. CHATBOT UI
-# -------------------------
-st.markdown("---")
-st.subheader("💬 Chatbot: Ask About the Map and Changes")
-
-# Show previous messages
-for msg in st.session_state["chat_history"]:
-    with st.chat_message(msg["role"]):
-        st.markdown(msg["content"])
-
-# Input box for new question
-user_input = st.chat_input(
-    "Ask a question about land cover or changes between the years..."
-)
-
-if user_input:
-    # Add user message
-    st.session_state["chat_history"].append(
-        {"role": "user", "content": user_input}
+    st.markdown(
+        "<p style='font-size:12px;color:#6b7280;margin-top:2px;'>"
+        "Explore Dynamic World land cover with AI + interactive maps."
+        "</p>",
+        unsafe_allow_html=True,
     )
 
-    # Build messages for OpenAI
-    messages_for_api = [
-        {
-            "role": "system",
-            "content": (
-                "You are a helpful assistant that explains Dynamic World land cover "
-                "maps and changes over time in simple language. "
-                "The location is fixed and the user compares different years."
-            ),
-        }
-    ]
-    messages_for_api.extend(st.session_state["chat_history"])
+    # ---- Analysis settings "card" ----
+    st.markdown(
+        "<div style='background:#f9fafb;border-radius:14px;"
+        "border:1px solid #e5e7eb;padding:10px 10px 8px;margin-bottom:10px;'>",
+        unsafe_allow_html=True,
+    )
 
-    # Call chatbot
-    with st.chat_message("assistant"):
+    # Header row: title + pill
+    col_h1, col_pill = st.columns([0.6, 0.4])
+    with col_h1:
+        st.markdown(
+            "<span style='font-weight:600;color:#111827;font-size:12px;'>"
+            "Analysis settings</span>",
+            unsafe_allow_html=True,
+        )
+    with col_pill:
+        st.markdown(
+            "<div style='font-size:10px;padding:2px 8px;border-radius:999px;"
+            "background:#eef2ff;color:#4f46e5;text-align:right;'>"
+            "Step 1 · Configure</div>",
+            unsafe_allow_html=True,
+        )
+
+    # Year A / Year B selectors
+    col_year_a, col_year_b = st.columns(2)
+    with col_year_a:
+        st.markdown(
+            "<label style='font-size:11px;color:#6b7280;'>Year A</label>",
+            unsafe_allow_html=True,
+        )
+        year_a = st.selectbox("", YEARS, index=len(YEARS) - 2, key="year_a_select")
+    with col_year_b:
+        st.markdown(
+            "<label style='font-size:11px;color:#6b7280;'>Year B</label>",
+            unsafe_allow_html=True,
+        )
+        year_b = st.selectbox("", YEARS, index=len(YEARS) - 1, key="year_b_select")
+
+    # Function select
+    st.markdown(
+        "<label style='font-size:11px;color:#6b7280;margin-top:4px;'>Function</label>",
+        unsafe_allow_html=True,
+    )
+    analysis_function = st.selectbox(
+        "",
+        [
+            "change_detection",
+            "single_year",
+            "timeseries",
+        ],
+        index=0,
+        key="function_select",
+    )
+
+    # Note: we keep AOI fixed to keep things simple and match
+    # "location does not change". If you want a text box + "use map view",
+    # we can add that later.
+
+    st.markdown(
+        "<p style='font-size:11px;color:#6b7280;margin-top:6px;'>"
+        "Location is fixed to the study area. Years control which images "
+        "you see on the map."
+        "</p>",
+        unsafe_allow_html=True,
+    )
+
+    st.markdown("</div>", unsafe_allow_html=True)  # end analysis settings card
+
+    # ---- Messages area ----
+    st.markdown(
+        "<div style='border-radius:12px;background:#f9fafb;border:1px solid #e5e7eb;"
+        "padding:10px;height:320px;overflow-y:auto;'>",
+        unsafe_allow_html=True,
+    )
+
+    # Render chat history messages
+    for msg in st.session_state["chat_history"]:
+        # Similar bubble style: blue for user, grey for bot
+        bg = "#dbeafe" if msg["role"] == "user" else "#f3f4f6"
+        align = "flex-end" if msg["role"] == "user" else "flex-start"
+        st.markdown(
+            f"""
+            <div style="
+                display:flex;
+                justify-content:{align};
+                margin-bottom:6px;
+            ">
+              <div style="
+                max-width:90%;
+                padding:8px 10px;
+                border-radius:12px;
+                background:{bg};
+                font-size:13px;
+                line-height:1.4;
+              ">
+                {msg["content"]}
+              </div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+    st.markdown("</div>", unsafe_allow_html=True)  # end messages box
+
+    # ---- Chat input (Run) ----
+    with st.form("chat_form", clear_on_submit=True):
+        user_text = st.text_input(
+            "",
+            placeholder="Optional: ask a question about the change",
+        )
+        run_clicked = st.form_submit_button("▶ Run")
+
+    # When Run clicked: update chat + (optionally) do analysis in chatbot
+    if run_clicked:
+        # 1) Add user message (or system summary if empty)
+        if user_text.strip():
+            st.session_state["chat_history"].append(
+                {"role": "user", "content": user_text.strip()}
+            )
+        else:
+            st.session_state["chat_history"].append(
+                {
+                    "role": "user",
+                    "content": (
+                        f"Run {analysis_function} for {LOCATION_NAME} "
+                        f"({year_a} → {year_b})."
+                    ),
+                }
+            )
+
+        # 2) Build messages for OpenAI
+        messages_for_api = [
+            {
+                "role": "system",
+                "content": (
+                    "You are a helpful assistant that explains Dynamic World land "
+                    "cover maps and changes over time in very simple language. "
+                    "The location is fixed; the user chooses Year A and Year B and "
+                    "an analysis function (change_detection, single_year, timeseries). "
+                    "Explain what the map likely shows, how land cover changed, "
+                    "and any important patterns."
+                ),
+            }
+        ]
+        messages_for_api.extend(st.session_state["chat_history"])
+
+        # 3) Call chatbot
         with st.spinner("Thinking..."):
             reply = ask_chatbot(messages_for_api)
-            st.markdown(reply)
 
-    # Save assistant reply
-    st.session_state["chat_history"].append(
-        {"role": "assistant", "content": reply}
-    )
+        # 4) Save reply
+        st.session_state["chat_history"].append(
+            {"role": "assistant", "content": reply}
+        )
+
+    st.markdown("</div>", unsafe_allow_html=True)  # end left panel card
+
+
+# ---------- RIGHT PANEL ----------
+with right_col:
+    st.markdown("<div class='panel-card'>", unsafe_allow_html=True)
+
+    # Header: title + small caption
+    head_left, head_right = st.columns([0.6, 0.4])
+    with head_left:
+        st.markdown(
+            "<div style='font-size:16px;font-weight:600;color:#111827;"
+            "margin-bottom:2px;'>Interactive map</div>",
+            unsafe_allow_html=True,
+        )
+        st.markdown(
+            f"<div style='font-size:12px;color:#6b7280;'>{LOCATION_NAME} · "
+            f"Dynamic World {year_a}–{year_b}</div>",
+            unsafe_allow_html=True,
+        )
+    with head_right:
+        st.markdown(
+            "<div style='font-size:11px;color:#6b7280;text-align:right;'>"
+            "Use the layer control on the map to toggle DW Year A / DW Year B / Change."
+            "</div>",
+            unsafe_allow_html=True,
+        )
+
+    # Map + legend side by side
+    map_col, legend_col = st.columns([0.7, 0.3])
+
+    with map_col:
+        with st.spinner("Loading Dynamic World layers from Earth Engine..."):
+            dynamic_map = create_dynamic_world_map(location_point, year_a, year_b)
+
+        # geemap has .to_streamlit() to embed interactive map.:contentReference[oaicite:6]{index=6}
+        dynamic_map.to_streamlit(height=480)
+
+    with legend_col:
+        render_dw_legend()
+
+    st.markdown("</div>", unsafe_allow_html=True)  # end right panel card
