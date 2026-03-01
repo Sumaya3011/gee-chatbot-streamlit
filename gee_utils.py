@@ -1,14 +1,15 @@
 # gee_utils.py
 """
 Google Earth Engine / Dynamic World logic.
-- No Streamlit UI here.
-- Uses geemap to build an interactive map object.
+
+This file:
+- Builds Dynamic World images for given years.
+- Returns XYZ tile URLs that we can show in a Folium map.
 """
 
 import ee
-import geemap.foliumap as geemap
 
-from config import CLASS_PALETTE, LOCATION_LAT, LOCATION_LON
+from config import CLASS_PALETTE
 
 
 def build_dynamic_world_image(point_geom: ee.Geometry, year: int):
@@ -18,11 +19,10 @@ def build_dynamic_world_image(point_geom: ee.Geometry, year: int):
     Returns:
       (image, vis_params)
     """
-
     start = f"{year}-01-01"
     end = f"{year}-12-31"
 
-    # Dynamic World collection (GOOGLE/DYNAMICWORLD/V1):contentReference[oaicite:3]{index=3}
+    # Dynamic World collection (GOOGLE/DYNAMICWORLD/V1)
     dw_collection = (
         ee.ImageCollection("GOOGLE/DYNAMICWORLD/V1")
         .filterDate(start, end)
@@ -41,40 +41,55 @@ def build_dynamic_world_image(point_geom: ee.Geometry, year: int):
     return dw_image, vis_params
 
 
-def create_dynamic_world_map(location_point: ee.Geometry, year_a: int, year_b: int):
+def _image_to_tile_url(image: ee.Image, vis_params: dict) -> str | None:
     """
-    Build a geemap.Map with:
-      - Satellite basemap
-      - Dynamic World for year A
-      - Dynamic World for year B
+    Convert an ee.Image + vis_params into an XYZ tile URL.
+
+    Returns:
+      A URL string like:
+        https://earthengine.googleapis.com/v1/projects/.../tiles/{z}/{x}/{y}
+      or None if something fails.
+    """
+    try:
+        # getMapId returns a dict with a TileFetcher under 'tile_fetcher'
+        map_id = image.getMapId(vis_params)
+        tile_url = map_id["tile_fetcher"].url_format
+        return tile_url
+    except Exception as e:
+        print("Error creating tile URL:", e)
+        return None
+
+
+def get_dw_tile_urls(point_geom: ee.Geometry, year_a: int, year_b: int) -> dict:
+    """
+    Build tile URLs for:
+      - Dynamic World year A
+      - Dynamic World year B
       - Change layer (A != B)
 
     Returns:
-      geemap.Map object (ready for .to_streamlit()).
+      {
+        "a": <url or None>,
+        "b": <url or None>,
+        "change": <url or None>,
+      }
     """
 
-    # 1) Create the map centered on your AOI
-    m = geemap.Map(
-        center=(LOCATION_LAT, LOCATION_LON),
-        zoom=11,
-        lite_mode=True,   # cleaner UI
-    )
-    m.add_basemap("SATELLITE")
+    # Year A
+    img_a, vis = build_dynamic_world_image(point_geom, year_a)
+    url_a = _image_to_tile_url(img_a, vis)
 
-    # 2) Year A and Year B images
-    img_a, vis = build_dynamic_world_image(location_point, year_a)
-    img_b, _ = build_dynamic_world_image(location_point, year_b)
+    # Year B
+    img_b, _ = build_dynamic_world_image(point_geom, year_b)
+    url_b = _image_to_tile_url(img_b, vis)  # same vis as A
 
-    # 3) Change layer: where classes are different between years
-    change = img_a.neq(img_b)  # 1 where changed, 0 where same
+    # Change: where class changed between A and B
+    change_img = img_a.neq(img_b)  # 1 where changed, 0 where same
     change_vis = {"min": 0, "max": 1, "palette": ["000000", "ff0000"]}
+    url_change = _image_to_tile_url(change_img, change_vis)
 
-    # 4) Add layers to map (DW style like JS Map.addLayer):contentReference[oaicite:4]{index=4}
-    m.addLayer(img_a, vis, f"Dynamic World {year_a}", True, 0.9)
-    m.addLayer(img_b, vis, f"Dynamic World {year_b}", False, 0.9)
-    m.addLayer(change, change_vis, f"Change {year_a}→{year_b}", False, 0.9)
-
-    # Optional: show layer control automatically (geemap does this by default)
-    m.add_layer_control()
-
-    return m
+    return {
+        "a": url_a,
+        "b": url_b,
+        "change": url_change,
+    }
