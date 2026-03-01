@@ -1,25 +1,23 @@
 # config.py
 """
-Basic configuration values for the app.
-Change these to match your study area and settings.
+Basic configuration for the app.
+Change values here if you want to update years, location, etc.
 """
 
 # Years you support for Dynamic World
 YEARS = [2020, 2021, 2022, 2023, 2024]
 
 # 🔒 Fixed study location (the location does not change)
-# TODO: change these to your actual study area coordinates
-LOCATION_LAT = 25.2048   # example: Dubai
-LOCATION_LON = 55.2708   # example: Dubai
-LOCATION_NAME = "My Study Area"  # label in the UI
+# TODO: change to your actual study area coordinates
+LOCATION_LAT = 24.4539    # example: Abu Dhabi lat
+LOCATION_LON = 54.3773    # example: Abu Dhabi lon
+LOCATION_NAME = "Abu Dhabi AOI"
 
 # OpenAI model to use
-OPENAI_MODEL = "gpt-4.1-mini"   # you can change later if you want
+OPENAI_MODEL = "gpt-4.1-mini"   # you can change later if needed
 
-# Size of the thumbnails (pixels)
-THUMB_SIZE = 512
-
-# Dynamic World palette colors (same order as classes 0–8)
+# Dynamic World palette (classes 0–8)
+# Using standard DW palette from the docs.:contentReference[oaicite:2]{index=2}
 CLASS_PALETTE = [
     "419bdf",  # 0 Water
     "397d49",  # 1 Trees
