@@ -2,4 +2,5 @@ streamlit
 earthengine-api
 openai
 requests
-geemap
+folium
+streamlit-folium
