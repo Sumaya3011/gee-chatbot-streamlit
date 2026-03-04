@@ -4,12 +4,19 @@ import json
 import streamlit as st
 import ee
 import folium
+from folium.plugins import DualMap
 from streamlit_folium import st_folium
 
-from config import YEARS, LOCATION_LAT, LOCATION_LON, LOCATION_NAME
+from config import (
+    YEARS,
+    LOCATION_LAT,
+    LOCATION_LON,
+    LOCATION_NAME,
+    CLASS_LABELS,
+    CLASS_PALETTE,
+)
 from gee_utils import get_dw_tile_urls
 from chat_utils import ask_chatbot
-from ui_components import render_dw_legend
 
 
 # -------------------------
@@ -21,7 +28,7 @@ st.set_page_config(
     layout="wide",
 )
 
-# Light CSS to mimic your old HTML style
+# CSS to improve look, make it closer to your HTML design
 st.markdown(
     """
     <style>
@@ -30,8 +37,9 @@ st.markdown(
     }
 
     .block-container {
-        padding-top: 1rem;
-        padding-bottom: 1rem;
+        padding-top: 0.8rem;
+        padding-bottom: 0.8rem;
+        max-width: 1300px;
     }
 
     .panel-card {
@@ -41,9 +49,19 @@ st.markdown(
         padding: 18px 18px 14px;
     }
 
-    /* Hide "View fullscreen" button on folium iframe to keep it clean */
-    button[title="View fullscreen"] {
-        display: none;
+    /* Make buttons a bit nicer */
+    .stButton > button {
+        border-radius: 999px;
+        padding: 0.45rem 0.9rem;
+        font-size: 13px;
+        font-weight: 500;
+        background: linear-gradient(135deg, #2563eb, #4f46e5);
+        border: none;
+        box-shadow: 0 8px 18px rgba(37, 99, 235, 0.35);
+    }
+
+    .stButton > button:hover {
+        box-shadow: 0 12px 24px rgba(37, 99, 235, 0.45);
     }
     </style>
     """,
@@ -109,9 +127,48 @@ if "chat_history" not in st.session_state:
 
 
 # -------------------------
-# 4. LAYOUT: LEFT PANEL (controls + chat) & RIGHT PANEL (map + legend)
+# 4. SMALL HELPER: LEGEND INSIDE THE MAP
 # -------------------------
-left_col, right_col = st.columns([0.36, 0.64], gap="large")
+def add_dw_legend_to_map(m):
+    """Inject a small legend box inside the Folium map (bottom-right)."""
+    items_html = ""
+    for label, color in zip(CLASS_LABELS, CLASS_PALETTE):
+        items_html += (
+            f"<div style='display:flex;align-items:center;margin-bottom:3px;'>"
+            f"<span style='display:inline-block;width:12px;height:12px;"
+            f"border-radius:3px;border:1px solid #d1d5db;"
+            f"background:#{color};margin-right:6px;'></span>"
+            f"<span style='font-size:11px;color:#374151;'>{label}</span>"
+            f"</div>"
+        )
+
+    legend_html = f"""
+    <div style="
+        position: absolute;
+        bottom: 10px;
+        right: 10px;
+        z-index: 9999;
+        background-color: rgba(255, 255, 255, 0.95);
+        padding: 6px 8px;
+        border-radius: 10px;
+        border: 1px solid #e5e7eb;
+        box-shadow: 0 6px 14px rgba(15, 23, 42, 0.18);
+    ">
+      <div style="font-size:11px;font-weight:600;color:#111827;margin-bottom:4px;">
+        Dynamic World
+      </div>
+      {items_html}
+    </div>
+    """
+
+    m.get_root().html.add_child(folium.Element(legend_html))
+
+
+# -------------------------
+# 5. LAYOUT: LEFT PANEL (controls + chat) & RIGHT PANEL (map)
+# -------------------------
+# Make map bigger → give it more width
+left_col, right_col = st.columns([0.32, 0.68], gap="large")
 
 # ---------- LEFT PANEL ----------
 with left_col:
@@ -136,7 +193,7 @@ with left_col:
         unsafe_allow_html=True,
     )
 
-    # ---- Analysis settings card ----
+    # ---- Analysis settings "card" (buttons above chat) ----
     st.markdown(
         "<div style='background:#f9fafb;border-radius:14px;"
         "border:1px solid #e5e7eb;padding:10px 10px 8px;margin-bottom:10px;'>",
@@ -158,11 +215,11 @@ with left_col:
             unsafe_allow_html=True,
         )
 
-    # Year selectors
+    # Year selectors (A = before, B = after)
     col_year_a, col_year_b = st.columns(2)
     with col_year_a:
         st.markdown(
-            "<label style='font-size:11px;color:#6b7280;'>Year A</label>",
+            "<label style='font-size:11px;color:#6b7280;'>Year A (Before)</label>",
             unsafe_allow_html=True,
         )
         year_a = st.selectbox(
@@ -174,7 +231,7 @@ with left_col:
 
     with col_year_b:
         st.markdown(
-            "<label style='font-size:11px;color:#6b7280;'>Year B</label>",
+            "<label style='font-size:11px;color:#6b7280;'>Year B (After)</label>",
             unsafe_allow_html=True,
         )
         year_b = st.selectbox(
@@ -184,40 +241,36 @@ with left_col:
             key="year_b_select",
         )
 
-    # Function select (for now used in the prompt, not logic)
+    # Function select
     st.markdown(
         "<label style='font-size:11px;color:#6b7280;margin-top:4px;'>Function</label>",
         unsafe_allow_html=True,
     )
     analysis_function = st.selectbox(
         label="",
-        options=[
-            "change_detection",
-            "single_year",
-            "timeseries",
-        ],
+        options=["change_detection", "single_year", "timeseries"],
         index=0,
         key="function_select",
     )
 
     st.markdown(
         "<p style='font-size:11px;color:#6b7280;margin-top:6px;'>"
-        "Location is fixed to the study area. Years control which Dynamic World "
-        "layers you see on the map."
+        "Location is fixed to the study area. Use the function and years to "
+        "control what the map shows."
         "</p>",
         unsafe_allow_html=True,
     )
 
     st.markdown("</div>", unsafe_allow_html=True)  # end analysis settings card
 
-    # ---- Messages area ----
+    # ---- Chatbot (bottom-left): messages + input ----
+    # Messages area
     st.markdown(
         "<div style='border-radius:12px;background:#f9fafb;border:1px solid #e5e7eb;"
-        "padding:10px;height:320px;overflow-y:auto;'>",
+        "padding:10px;height:260px;overflow-y:auto;margin-top:4px;'>",
         unsafe_allow_html=True,
     )
 
-    # Render chat history
     for msg in st.session_state["chat_history"]:
         bg = "#dbeafe" if msg["role"] == "user" else "#f3f4f6"
         align = "flex-end" if msg["role"] == "user" else "flex-start"
@@ -235,6 +288,7 @@ with left_col:
                 background:{bg};
                 font-size:13px;
                 line-height:1.4;
+                white-space:pre-wrap;
               ">
                 {msg["content"]}
               </div>
@@ -245,7 +299,7 @@ with left_col:
 
     st.markdown("</div>", unsafe_allow_html=True)  # end messages box
 
-    # ---- Chat input + Run button ----
+    # Chat input + Run button directly under messages (chatbot at bottom)
     with st.form("chat_form", clear_on_submit=True):
         user_text = st.text_input(
             label="",
@@ -253,8 +307,11 @@ with left_col:
         )
         run_clicked = st.form_submit_button("▶ Run")
 
+    # When you click Run:
+    # - logic for chat works
+    # - Streamlit reruns the script, so map above also updates to current options
     if run_clicked:
-        # If user typed something, use it; otherwise auto-generate a “run” message
+        # 1) Add a user message (asked question or a default description)
         if user_text.strip():
             st.session_state["chat_history"].append(
                 {"role": "user", "content": user_text.strip()}
@@ -270,26 +327,27 @@ with left_col:
                 }
             )
 
-        # Build messages for OpenAI
+        # 2) Prepare messages for OpenAI
         messages_for_api = [
             {
                 "role": "system",
                 "content": (
-                    "You are a helpful assistant that explains Dynamic World land "
-                    "cover maps and changes over time in simple language. "
-                    "The location is fixed; the user chooses Year A and Year B and "
-                    "an analysis function (change_detection, single_year, timeseries). "
-                    "Explain what the map likely shows, how land cover changed, "
-                    "and any important patterns at that location."
+                    "You are a helpful assistant that explains Dynamic World "
+                    "land cover maps and changes over time in simple language. "
+                    "The location is fixed; the user chooses Year A and Year B "
+                    "and an analysis function (change_detection, single_year, "
+                    "timeseries). Explain what the map likely shows, how land "
+                    "cover changed, and any important patterns."
                 ),
             }
         ]
         messages_for_api.extend(st.session_state["chat_history"])
 
-        # Call chatbot
+        # 3) Call the chatbot
         with st.spinner("Thinking..."):
             reply = ask_chatbot(messages_for_api)
 
+        # 4) Save reply to history
         st.session_state["chat_history"].append(
             {"role": "assistant", "content": reply}
         )
@@ -297,11 +355,11 @@ with left_col:
     st.markdown("</div>", unsafe_allow_html=True)  # end left panel card
 
 
-# ---------- RIGHT PANEL ----------
+# ---------- RIGHT PANEL (BIG MAP) ----------
 with right_col:
     st.markdown("<div class='panel-card'>", unsafe_allow_html=True)
 
-    # Header: title + caption
+    # Header
     head_left, head_right = st.columns([0.6, 0.4])
     with head_left:
         st.markdown(
@@ -311,34 +369,112 @@ with right_col:
         )
         st.markdown(
             f"<div style='font-size:12px;color:#6b7280;'>{LOCATION_NAME} · "
-            f"Dynamic World {year_a}–{year_b}</div>",
+            f"{analysis_function} · {year_a}–{year_b}</div>",
             unsafe_allow_html=True,
         )
     with head_right:
         st.markdown(
             "<div style='font-size:11px;color:#6b7280;text-align:right;'>"
-            "Use the layer control on the map to toggle Satellite / DW Year A / "
-            "DW Year B / Change."
+            "For change detection, the map splits: left = before (Year A), "
+            "right = after (Year B). For other functions, use the layer control "
+            "to toggle layers."
             "</div>",
             unsafe_allow_html=True,
         )
 
-    # Map + legend side by side
-    map_col, legend_col = st.columns([0.7, 0.3])
+    # Map area (bigger height)
+    with st.spinner("Loading Dynamic World layers from Earth Engine..."):
+        tile_urls = get_dw_tile_urls(location_point, year_a, year_b)
 
-    with map_col:
-        with st.spinner("Loading Dynamic World layers from Earth Engine..."):
-            tile_urls = get_dw_tile_urls(location_point, year_a, year_b)
+        # --- CASE 1: change_detection → split map (before / after) ---
+        if analysis_function == "change_detection":
+            # Create DualMap (two synchronized maps side by side)
+            m = DualMap(
+                location=[LOCATION_LAT, LOCATION_LON],
+                zoom_start=11,
+                tiles=None,
+            )
 
-            # Create Folium map centered on AOI
+            # LEFT map: Year A
+            folium.TileLayer(
+                tiles=(
+                    "https://server.arcgisonline.com/ArcGIS/rest/services/"
+                    "World_Imagery/MapServer/tile/{z}/{y}/{x}"
+                ),
+                attr="Esri World Imagery",
+                name="Satellite (A)",
+                overlay=False,
+                control=True,
+            ).add_to(m.m1)
+
+            if tile_urls.get("a"):
+                folium.raster_layers.TileLayer(
+                    tiles=tile_urls["a"],
+                    attr="Google Earth Engine – Dynamic World",
+                    name=f"DW · Year A ({year_a})",
+                    overlay=True,
+                    control=True,
+                    opacity=0.9,
+                ).add_to(m.m1)
+
+            # RIGHT map: Year B
+            folium.TileLayer(
+                tiles=(
+                    "https://server.arcgisonline.com/ArcGIS/rest/services/"
+                    "World_Imagery/MapServer/tile/{z}/{y}/{x}"
+                ),
+                attr="Esri World Imagery",
+                name="Satellite (B)",
+                overlay=False,
+                control=True,
+            ).add_to(m.m2)
+
+            if tile_urls.get("b"):
+                folium.raster_layers.TileLayer(
+                    tiles=tile_urls["b"],
+                    attr="Google Earth Engine – Dynamic World",
+                    name=f"DW · Year B ({year_b})",
+                    overlay=True,
+                    control=True,
+                    opacity=0.9,
+                ).add_to(m.m2)
+
+            # (Optional) Show change layer as overlay on both maps
+            if tile_urls.get("change"):
+                folium.raster_layers.TileLayer(
+                    tiles=tile_urls["change"],
+                    attr="Google Earth Engine – Dynamic World Change",
+                    name=f"DW · Change ({year_a} → {year_b})",
+                    overlay=True,
+                    control=True,
+                    opacity=0.7,
+                ).add_to(m.m1)
+                folium.raster_layers.TileLayer(
+                    tiles=tile_urls["change"],
+                    attr="Google Earth Engine – Dynamic World Change",
+                    name=f"DW · Change ({year_a} → {year_b})",
+                    overlay=True,
+                    control=True,
+                    opacity=0.7,
+                ).add_to(m.m2)
+
+            # Layer controls on each side
+            folium.LayerControl(collapsed=False).add_to(m.m1)
+            folium.LayerControl(collapsed=False).add_to(m.m2)
+
+            # Add legend to the whole DualMap (appears on top of one side)
+            add_dw_legend_to_map(m)
+
+        # --- CASE 2: other functions → single big map with layer toggles ---
+        else:
             m = folium.Map(
                 location=[LOCATION_LAT, LOCATION_LON],
                 zoom_start=11,
-                tiles=None,  # we'll define base layer manually
+                tiles=None,
                 control_scale=True,
             )
 
-            # Satellite base layer (Esri imagery, similar to your old map)
+            # Satellite base layer
             folium.TileLayer(
                 tiles=(
                     "https://server.arcgisonline.com/ArcGIS/rest/services/"
@@ -350,7 +486,7 @@ with right_col:
                 control=True,
             ).add_to(m)
 
-            # Dynamic World Year A
+            # DW Year A
             if tile_urls.get("a"):
                 folium.raster_layers.TileLayer(
                     tiles=tile_urls["a"],
@@ -361,7 +497,7 @@ with right_col:
                     opacity=0.8,
                 ).add_to(m)
 
-            # Dynamic World Year B
+            # DW Year B
             if tile_urls.get("b"):
                 folium.raster_layers.TileLayer(
                     tiles=tile_urls["b"],
@@ -372,7 +508,7 @@ with right_col:
                     opacity=0.8,
                 ).add_to(m)
 
-            # Change layer (A → B)
+            # Change layer
             if tile_urls.get("change"):
                 folium.raster_layers.TileLayer(
                     tiles=tile_urls["change"],
@@ -380,16 +516,15 @@ with right_col:
                     name=f"DW · Change ({year_a} → {year_b})",
                     overlay=True,
                     control=True,
-                    opacity=0.8,
+                    opacity=0.7,
                 ).add_to(m)
 
-            # Layer control (like your old layer chips/radios)
             folium.LayerControl(collapsed=False).add_to(m)
 
-        # Embed the Folium map into Streamlit
-        st_folium(m, height=480, use_container_width=True)
+            # Small legend box inside map
+            add_dw_legend_to_map(m)
 
-    with legend_col:
-        render_dw_legend()
+    # Embed folium (or DualMap) in Streamlit – big map
+    st_folium(m, height=580, use_container_width=True)
 
     st.markdown("</div>", unsafe_allow_html=True)  # end right panel card
