@@ -21,7 +21,7 @@ from chat_utils import ask_chatbot
 
 
 # -------------------------
-# 1. PAGE CONFIG & CUSTOM CSS
+# 1. PAGE CONFIG & CSS (fixed one-page layout)
 # -------------------------
 st.set_page_config(
     page_title="earthmonitor – Dynamic World Explorer",
@@ -34,7 +34,7 @@ st.markdown(
     <style>
     html, body, .stApp {
         height: 100vh;
-        overflow: hidden; /* avoid vertical scrolling */
+        overflow: hidden; /* prevent page scroll */
     }
 
     .block-container {
@@ -44,23 +44,24 @@ st.markdown(
         height: 100%;
     }
 
+    /* Main container uses full height */
     .full-height-layout {
         display: flex;
         flex-direction: column;
         height: 100%;
-        gap: 0.5rem;
+        gap: 0.4rem;
+    }
+
+    .stApp {
+        background: radial-gradient(circle at top left, #e0f2fe, #f9fafb);
+        font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
     }
 
     .panel-card {
         background: #ffffff;
         border-radius: 18px;
         box-shadow: 0 18px 40px rgba(15, 23, 42, 0.16);
-        padding: 14px 16px 12px;
-    }
-
-    .stApp {
-        background: radial-gradient(circle at top left, #e0f2fe, #f9fafb);
-        font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+        padding: 12px 14px 10px;
     }
 
     .stButton > button {
@@ -77,13 +78,21 @@ st.markdown(
         box-shadow: 0 12px 24px rgba(37, 99, 235, 0.45);
     }
 
-    .chat-container {
+    /* Chat box: one fixed card with internal scroll for messages */
+    .chat-box {
         border-radius: 14px;
         background: #f9fafb;
         border: 1px solid #e5e7eb;
-        padding: 10px;
-        height: 220px;  /* smaller so everything fits on one screen */
+        padding: 8px;
+        height: 260px;           /* fixed height */
+        display: flex;
+        flex-direction: column;
+    }
+
+    .chat-messages {
+        flex: 1;
         overflow-y: auto;
+        margin-bottom: 6px;
     }
 
     .chat-bubble-user {
@@ -118,7 +127,7 @@ st.markdown(
 
 
 # -------------------------
-# 2. INIT SESSION STATE (FUNCTION + YEARS + CHAT)
+# 2. SESSION STATE (function + years + chat)
 # -------------------------
 if "analysis_function" not in st.session_state:
     st.session_state["analysis_function"] = "change_detection"
@@ -146,10 +155,9 @@ if "chat_history" not in st.session_state:
 
 
 # -------------------------
-# 3. INITIALIZE GOOGLE EARTH ENGINE (SERVICE ACCOUNT)
+# 3. INIT GOOGLE EARTH ENGINE (service account)
 # -------------------------
 def init_ee():
-    """Initialize Earth Engine using service account JSON from Streamlit secrets."""
     if getattr(st.session_state, "ee_initialized", False):
         return
 
@@ -185,10 +193,9 @@ location_point = ee.Geometry.Point([LOCATION_LON, LOCATION_LAT])
 
 
 # -------------------------
-# 4. HELPER: LEGEND BOX INSIDE MAP
+# 4. MAP LEGEND (inside map)
 # -------------------------
 def add_dw_legend_to_map(m):
-    """Inject a small legend box inside the Folium map (bottom-right)."""
     items_html = ""
     for label, color in zip(CLASS_LABELS, CLASS_PALETTE):
         items_html += (
@@ -218,22 +225,16 @@ def add_dw_legend_to_map(m):
       {items_html}
     </div>
     """
-
     m.get_root().html.add_child(folium.Element(legend_html))
 
 
 # -------------------------
-# 5. HELPER: PARSE CHAT TO CONTROL MAP
+# 5. CHAT → CONTROL MAP (simple parser)
 # -------------------------
 def update_controls_from_text(text: str):
-    """
-    Simple parser:
-    - Detect years in the message and map them to year_a / year_b.
-    - Detect keywords to switch analysis_function.
-    """
     t = text.lower()
 
-    # Detect function
+    # Function detection
     if "change" in t or "difference" in t:
         st.session_state["analysis_function"] = "change_detection"
     elif "time series" in t or "timeseries" in t or "timeline" in t:
@@ -241,7 +242,7 @@ def update_controls_from_text(text: str):
     elif "single year" in t or "only" in t:
         st.session_state["analysis_function"] = "single_year"
 
-    # Detect years like 2020, 2021, etc.
+    # Year detection
     found = re.findall(r"\b(19[0-9]{2}|20[0-9]{2})\b", t)
     years_found = sorted({int(y) for y in found if int(y) in YEARS})
 
@@ -249,13 +250,11 @@ def update_controls_from_text(text: str):
         return
 
     if len(years_found) == 1:
-        # single year → set both A and B to same year
         st.session_state["year_a"] = years_found[0]
         st.session_state["year_b"] = years_found[0]
         if st.session_state["analysis_function"] != "timeseries":
             st.session_state["analysis_function"] = "single_year"
     else:
-        # multiple years → min = A, max = B
         st.session_state["year_a"] = years_found[0]
         st.session_state["year_b"] = years_found[-1]
         if st.session_state["analysis_function"] == "single_year":
@@ -263,11 +262,11 @@ def update_controls_from_text(text: str):
 
 
 # -------------------------
-# 6. MAIN LAYOUT (ONE PAGE, NO SCROLL)
+# 6. LAYOUT (header + left/right panels)
 # -------------------------
 st.markdown("<div class='full-height-layout'>", unsafe_allow_html=True)
 
-# Big header: earthmonitor
+# Top: big brand header (earthmonitor)
 st.markdown(
     """
     <div style="text-align:center;margin-bottom:0.2rem;">
@@ -288,14 +287,14 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# Two columns: left (controls + chat), right (map)
+# Main content: two columns filling the rest of height
 left_col, right_col = st.columns([0.32, 0.68], gap="large")
 
-# ---------- LEFT PANEL ----------
+# ---------- LEFT: controls + chat in bottom box ----------
 with left_col:
     st.markdown("<div class='panel-card'>", unsafe_allow_html=True)
 
-    # ---- Analysis settings ----
+    # --- Analysis settings card (top) ---
     st.markdown(
         "<div style='background:#f9fafb;border-radius:14px;"
         "border:1px solid #e5e7eb;padding:8px 10px 8px;margin-bottom:8px;'>",
@@ -389,22 +388,24 @@ with left_col:
 
     st.markdown(
         "<p style='font-size:11px;color:#6b7280;margin-top:4px;margin-bottom:4px;'>"
-        "The location is fixed to the study area. You can change years here, "
-        "or ask the chatbot and it will update the map."
+        "Location is fixed to the study area. Change years here, or ask the chatbot "
+        "and the map will update automatically."
         "</p>",
         unsafe_allow_html=True,
     )
 
     st.markdown("</div>", unsafe_allow_html=True)  # end settings card
 
-    # ---- Chatbot (fixed box with scroll & colors) ----
+    # --- Chatbox: ONE fixed box at bottom-left ---
     st.markdown(
+        "<div class='chat-box'>"
         "<div style='font-size:12px;font-weight:600;color:#111827;margin-bottom:4px;'>"
         "Chatbot</div>",
         unsafe_allow_html=True,
     )
 
-    st.markdown("<div class='chat-container'>", unsafe_allow_html=True)
+    # Messages (scroll inside)
+    st.markdown("<div class='chat-messages'>", unsafe_allow_html=True)
 
     for msg in st.session_state["chat_history"]:
         if msg["role"] == "user":
@@ -433,15 +434,17 @@ with left_col:
             unsafe_allow_html=True,
         )
 
-    st.markdown("</div>", unsafe_allow_html=True)  # end chat-container
+    st.markdown("</div>", unsafe_allow_html=True)  # end chat-messages
 
-    # Chat input + Run button
+    # Input + button still visually part of same "box"
     with st.form("chat_form", clear_on_submit=True):
         user_text = st.text_input(
             label="",
             placeholder="Ask about years, change, or time series…",
         )
         run_clicked = st.form_submit_button("▶ Run")
+
+    st.markdown("</div>", unsafe_allow_html=True)  # end chat-box
 
     if run_clicked:
         if user_text.strip():
@@ -485,10 +488,10 @@ with left_col:
             {"role": "assistant", "content": reply}
         )
 
-    st.markdown("</div>", unsafe_allow_html=True)  # end left card
+    st.markdown("</div>", unsafe_allow_html=True)  # end left panel-card
 
 
-# ---------- RIGHT PANEL (BIG MAP, NO PAGE SCROLL) ----------
+# ---------- RIGHT: map panel ----------
 with right_col:
     st.markdown("<div class='panel-card'>", unsafe_allow_html=True)
 
@@ -658,9 +661,9 @@ with right_col:
             folium.LayerControl(collapsed=False).add_to(m)
             add_dw_legend_to_map(m)
 
-    # Map height tuned so everything fits in 100vh with no scroll on normal screens
-    st_folium(m, height=480, use_container_width=True)
+    # Slightly smaller map height so page fits with no scroll
+    st_folium(m, height=430, use_container_width=True)
 
-    st.markdown("</div>", unsafe_allow_html=True)  # end right card
+    st.markdown("</div>", unsafe_allow_html=True)  # end right panel-card
 
 st.markdown("</div>", unsafe_allow_html=True)  # end full-height-layout
