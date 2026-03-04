@@ -24,7 +24,7 @@ from chat_utils import ask_chatbot
 # 1. PAGE CONFIG & CUSTOM CSS
 # -------------------------
 st.set_page_config(
-    page_title="GEE Chatbot – Dynamic World Explorer",
+    page_title="earthmonitor – Dynamic World Explorer",
     page_icon="🌍",
     layout="wide",
 )
@@ -32,22 +32,35 @@ st.set_page_config(
 st.markdown(
     """
     <style>
-    .stApp {
-        background: radial-gradient(circle at top left, #e0f2fe, #f9fafb);
-        font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    html, body, .stApp {
+        height: 100vh;
+        overflow: hidden; /* avoid vertical scrolling */
     }
 
     .block-container {
-        padding-top: 0.8rem;
-        padding-bottom: 0.8rem;
+        padding-top: 0.5rem;
+        padding-bottom: 0.5rem;
         max-width: 1300px;
+        height: 100%;
+    }
+
+    .full-height-layout {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        gap: 0.5rem;
     }
 
     .panel-card {
         background: #ffffff;
         border-radius: 18px;
         box-shadow: 0 18px 40px rgba(15, 23, 42, 0.16);
-        padding: 18px 18px 14px;
+        padding: 14px 16px 12px;
+    }
+
+    .stApp {
+        background: radial-gradient(circle at top left, #e0f2fe, #f9fafb);
+        font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
     }
 
     .stButton > button {
@@ -64,13 +77,12 @@ st.markdown(
         box-shadow: 0 12px 24px rgba(37, 99, 235, 0.45);
     }
 
-    /* Fix the chat box look */
     .chat-container {
         border-radius: 14px;
         background: #f9fafb;
         border: 1px solid #e5e7eb;
         padding: 10px;
-        height: 260px;
+        height: 220px;  /* smaller so everything fits on one screen */
         overflow-y: auto;
     }
 
@@ -96,7 +108,6 @@ st.markdown(
         white-space: pre-wrap;
     }
 
-    /* Hide "View fullscreen" icon to keep the map clean */
     button[title="View fullscreen"] {
         display: none;
     }
@@ -123,9 +134,9 @@ if "chat_history" not in st.session_state:
         {
             "role": "assistant",
             "content": (
-                "Hi! I can help you explore Dynamic World land cover and "
-                "update the map when you ask for different years or analyses.\n\n"
-                "For example:\n"
+                "Hi! I’m the earthmonitor assistant.\n\n"
+                "I can update the map when you ask for different years or analyses.\n"
+                "Try things like:\n"
                 "- \"Show change between 2020 and 2024\"\n"
                 "- \"Single year 2022\"\n"
                 "- \"Time series from 2020 to 2024\""
@@ -216,7 +227,7 @@ def add_dw_legend_to_map(m):
 # -------------------------
 def update_controls_from_text(text: str):
     """
-    Very simple parser:
+    Simple parser:
     - Detect years in the message and map them to year_a / year_b.
     - Detect keywords to switch analysis_function.
     """
@@ -230,60 +241,64 @@ def update_controls_from_text(text: str):
     elif "single year" in t or "only" in t:
         st.session_state["analysis_function"] = "single_year"
 
-    # Detect years like 2020, 2021, 2022, ... that are in YEARS
+    # Detect years like 2020, 2021, etc.
     found = re.findall(r"\b(19[0-9]{2}|20[0-9]{2})\b", t)
     years_found = sorted({int(y) for y in found if int(y) in YEARS})
 
     if not years_found:
         return
 
-    # If one year → treat as single_year “focus year”
     if len(years_found) == 1:
+        # single year → set both A and B to same year
         st.session_state["year_a"] = years_found[0]
         st.session_state["year_b"] = years_found[0]
         if st.session_state["analysis_function"] != "timeseries":
             st.session_state["analysis_function"] = "single_year"
     else:
-        # Multiple years → use min as A, max as B
+        # multiple years → min = A, max = B
         st.session_state["year_a"] = years_found[0]
         st.session_state["year_b"] = years_found[-1]
         if st.session_state["analysis_function"] == "single_year":
-            # if they mention two years, prefer change or timeseries
             st.session_state["analysis_function"] = "change_detection"
 
 
 # -------------------------
-# 6. LAYOUT: LEFT PANEL (controls + chat) & RIGHT PANEL (big map)
+# 6. MAIN LAYOUT (ONE PAGE, NO SCROLL)
 # -------------------------
+st.markdown("<div class='full-height-layout'>", unsafe_allow_html=True)
+
+# Big header: earthmonitor
+st.markdown(
+    """
+    <div style="text-align:center;margin-bottom:0.2rem;">
+      <div style="
+        font-size:34px;
+        font-weight:800;
+        letter-spacing:0.18em;
+        text-transform:uppercase;
+        color:#0f172a;
+      ">
+        earth<span style="color:#2563eb;">monitor</span>
+      </div>
+      <div style="font-size:12px;color:#6b7280;margin-top:2px;">
+        Dynamic World Land Cover Explorer
+      </div>
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
+
+# Two columns: left (controls + chat), right (map)
 left_col, right_col = st.columns([0.32, 0.68], gap="large")
 
 # ---------- LEFT PANEL ----------
 with left_col:
     st.markdown("<div class='panel-card'>", unsafe_allow_html=True)
 
-    # Title row (GEE Chatbot + Beta badge)
-    col_title, col_badge = st.columns([0.7, 0.3])
-    with col_title:
-        st.markdown("### GEE Chatbot")
-    with col_badge:
-        st.markdown(
-            "<span style='font-size:10px;padding:2px 6px;border-radius:999px;"
-            "background:#eff6ff;color:#1d4ed8;font-weight:600;"
-            "text-transform:uppercase;letter-spacing:0.04em;'>Beta</span>",
-            unsafe_allow_html=True,
-        )
-
-    st.markdown(
-        "<p style='font-size:12px;color:#6b7280;margin-top:2px;'>"
-        "Explore Dynamic World land cover with AI + interactive maps."
-        "</p>",
-        unsafe_allow_html=True,
-    )
-
-    # ---- Analysis settings (function first, then year controls) ----
+    # ---- Analysis settings ----
     st.markdown(
         "<div style='background:#f9fafb;border-radius:14px;"
-        "border:1px solid #e5e7eb;padding:10px 10px 8px;margin-bottom:10px;'>",
+        "border:1px solid #e5e7eb;padding:8px 10px 8px;margin-bottom:8px;'>",
         unsafe_allow_html=True,
     )
 
@@ -302,7 +317,6 @@ with left_col:
             unsafe_allow_html=True,
         )
 
-    # 1) Function selector (top)
     func_options = ["change_detection", "single_year", "timeseries"]
     func_labels = {
         "change_detection": "Change detection (A → B)",
@@ -319,10 +333,9 @@ with left_col:
     )
     st.session_state["analysis_function"] = selected_func
 
-    # 2) Year controls depend on function
     if selected_func == "single_year":
         st.markdown(
-            "<label style='font-size:11px;color:#6b7280;margin-top:4px;'>Year</label>",
+            "<label style='font-size:11px;color:#6b7280;margin-top:2px;'>Year</label>",
             unsafe_allow_html=True,
         )
         idx = YEARS.index(st.session_state["year_a"])
@@ -334,7 +347,6 @@ with left_col:
         )
         st.session_state["year_a"] = year_single
         st.session_state["year_b"] = year_single
-
     else:
         col_year_a, col_year_b = st.columns(2)
         with col_year_a:
@@ -376,16 +388,16 @@ with left_col:
             st.session_state["year_b"] = year_b
 
     st.markdown(
-        "<p style='font-size:11px;color:#6b7280;margin-top:6px;'>"
-        "The location is fixed to the study area. Change function and years, "
-        "or ask the chatbot, and the map will update."
+        "<p style='font-size:11px;color:#6b7280;margin-top:4px;margin-bottom:4px;'>"
+        "The location is fixed to the study area. You can change years here, "
+        "or ask the chatbot and it will update the map."
         "</p>",
         unsafe_allow_html=True,
     )
 
-    st.markdown("</div>", unsafe_allow_html=True)  # end analysis settings card
+    st.markdown("</div>", unsafe_allow_html=True)  # end settings card
 
-    # ---- Chatbot: fixed box with scroll and distinct colors ----
+    # ---- Chatbot (fixed box with scroll & colors) ----
     st.markdown(
         "<div style='font-size:12px;font-weight:600;color:#111827;margin-bottom:4px;'>"
         "Chatbot</div>",
@@ -423,7 +435,7 @@ with left_col:
 
     st.markdown("</div>", unsafe_allow_html=True)  # end chat-container
 
-    # Chat input + Run button (below the fixed chat box)
+    # Chat input + Run button
     with st.form("chat_form", clear_on_submit=True):
         user_text = st.text_input(
             label="",
@@ -432,11 +444,9 @@ with left_col:
         run_clicked = st.form_submit_button("▶ Run")
 
     if run_clicked:
-        # 1) Add user message (or auto-generated description)
         if user_text.strip():
             user_msg = user_text.strip()
         else:
-            # If empty, describe current settings
             af = st.session_state["analysis_function"]
             ya = st.session_state["year_a"]
             yb = st.session_state["year_b"]
@@ -446,10 +456,8 @@ with left_col:
             {"role": "user", "content": user_msg}
         )
 
-        # 2) Let chat message control the map (update function and years)
         update_controls_from_text(user_msg)
 
-        # 3) Build messages for OpenAI
         af = st.session_state["analysis_function"]
         ya = st.session_state["year_a"]
         yb = st.session_state["year_b"]
@@ -458,19 +466,18 @@ with left_col:
             {
                 "role": "system",
                 "content": (
-                    "You are a helpful assistant that explains Dynamic World land "
-                    "cover maps and changes over time in simple language. "
+                    "You are a helpful assistant inside an app called earthmonitor. "
                     "The app has a fixed study area and three analysis modes: "
                     "change_detection (compare two years), single_year (one year), "
                     "and timeseries (start year to end year). "
                     f"The current mode is {af}, with years {ya} and {yb}. "
-                    "Describe what the map likely shows and any important patterns."
+                    "Explain what the map likely shows and any important patterns, "
+                    "in simple language."
                 ),
             }
         ]
         messages_for_api.extend(st.session_state["chat_history"])
 
-        # 4) Call the chatbot
         with st.spinner("Thinking..."):
             reply = ask_chatbot(messages_for_api)
 
@@ -478,10 +485,10 @@ with left_col:
             {"role": "assistant", "content": reply}
         )
 
-    st.markdown("</div>", unsafe_allow_html=True)  # end left panel card
+    st.markdown("</div>", unsafe_allow_html=True)  # end left card
 
 
-# ---------- RIGHT PANEL (BIG MAP) ----------
+# ---------- RIGHT PANEL (BIG MAP, NO PAGE SCROLL) ----------
 with right_col:
     st.markdown("<div class='panel-card'>", unsafe_allow_html=True)
 
@@ -489,11 +496,10 @@ with right_col:
     ya = st.session_state["year_a"]
     yb = st.session_state["year_b"]
 
-    # Header
     head_left, head_right = st.columns([0.6, 0.4])
     with head_left:
         st.markdown(
-            "<div style='font-size:16px;font-weight:600;color:#111827;"
+            "<div style='font-size:15px;font-weight:600;color:#111827;"
             "margin-bottom:2px;'>Interactive map</div>",
             unsafe_allow_html=True,
         )
@@ -505,21 +511,18 @@ with right_col:
     with head_right:
         st.markdown(
             "<div style='font-size:11px;color:#6b7280;text-align:right;'>"
-            "Change detection: map splits (left = before, right = after).<br>"
-            "Single year / Time series: use layer control to toggle layers."
+            "Change detection: split view (left = before, right = after).<br>"
+            "Other modes: use the layer control to toggle layers."
             "</div>",
             unsafe_allow_html=True,
         )
 
-    # Map area
     with st.spinner("Loading Dynamic World layers from Earth Engine..."):
-        # For single_year, pass same year twice to reuse tile function
         if af == "single_year":
             tile_urls = get_dw_tile_urls(location_point, ya, ya)
         else:
             tile_urls = get_dw_tile_urls(location_point, ya, yb)
 
-        # --- CASE 1: change_detection → split DualMap ---
         if af == "change_detection":
             m = DualMap(
                 location=[LOCATION_LAT, LOCATION_LON],
@@ -571,7 +574,6 @@ with right_col:
                     opacity=0.9,
                 ).add_to(m.m2)
 
-            # Optional change overlay on both
             if tile_urls.get("change"):
                 folium.raster_layers.TileLayer(
                     tiles=tile_urls["change"],
@@ -593,10 +595,8 @@ with right_col:
             folium.LayerControl(collapsed=False).add_to(m.m1)
             folium.LayerControl(collapsed=False).add_to(m.m2)
 
-            # Legend box
             add_dw_legend_to_map(m)
 
-        # --- CASE 2: single_year / timeseries → single map with layers ---
         else:
             m = folium.Map(
                 location=[LOCATION_LAT, LOCATION_LON],
@@ -605,7 +605,6 @@ with right_col:
                 control_scale=True,
             )
 
-            # Satellite base
             folium.TileLayer(
                 tiles=(
                     "https://server.arcgisonline.com/ArcGIS/rest/services/"
@@ -617,7 +616,6 @@ with right_col:
                 control=True,
             ).add_to(m)
 
-            # Single year: only show that year
             if af == "single_year":
                 if tile_urls.get("a"):
                     folium.raster_layers.TileLayer(
@@ -629,7 +627,6 @@ with right_col:
                         opacity=0.85,
                     ).add_to(m)
             else:
-                # Timeseries: show both years + change
                 if tile_urls.get("a"):
                     folium.raster_layers.TileLayer(
                         tiles=tile_urls["a"],
@@ -661,7 +658,9 @@ with right_col:
             folium.LayerControl(collapsed=False).add_to(m)
             add_dw_legend_to_map(m)
 
-    # Embed map (or DualMap) – big and wide
-    st_folium(m, height=580, use_container_width=True)
+    # Map height tuned so everything fits in 100vh with no scroll on normal screens
+    st_folium(m, height=480, use_container_width=True)
 
-    st.markdown("</div>", unsafe_allow_html=True)  # end right panel card
+    st.markdown("</div>", unsafe_allow_html=True)  # end right card
+
+st.markdown("</div>", unsafe_allow_html=True)  # end full-height-layout
