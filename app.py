@@ -174,24 +174,7 @@ left_col, right_col = st.columns([0.32, 0.68], gap="large")
 with left_col:
     st.markdown("<div class='panel-card'>", unsafe_allow_html=True)
 
-    # Title row (GEE Chatbot + Beta badge)
-    col_title, col_badge = st.columns([0.7, 0.3])
-    with col_title:
-        st.markdown("### GEE Chatbot")
-    with col_badge:
-        st.markdown(
-            "<span style='font-size:10px;padding:2px 6px;border-radius:999px;"
-            "background:#eff6ff;color:#1d4ed8;font-weight:600;"
-            "text-transform:uppercase;letter-spacing:0.04em;'>Beta</span>",
-            unsafe_allow_html=True,
-        )
-
-    st.markdown(
-        "<p style='font-size:12px;color:#6b7280;margin-top:2px;'>"
-        "Explore Dynamic World land cover with AI + interactive maps."
-        "</p>",
-        unsafe_allow_html=True,
-    )
+   
 
     # ---- Analysis settings "card" (buttons above chat) ----
     st.markdown(
