@@ -5,7 +5,7 @@ Change values here if you want to update years, location, etc.
 """
 
 # Years you support for Dynamic World
-YEARS = [2020, 2021, 2022, 2023, 2024]
+YEARS = [2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025]
 
 # 🔒 Fixed study location (the location does not change)
 # TODO: change to your actual study area coordinates
