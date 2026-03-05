@@ -171,7 +171,7 @@ st.markdown(
 
 
 # -------------------------
-# 2. SESSION STATE (LOGIC KEPT SAME)
+# 2. SESSION STATE (LOGIC KEPT SAME, + LOCATION)
 # -------------------------
 if "analysis_function" not in st.session_state:
     st.session_state["analysis_function"] = "change_detection"
@@ -192,6 +192,16 @@ if "chat_history" not in st.session_state:
             ),
         }
     ]
+
+# NEW: location in session state (defaults from config)
+if "location_name" not in st.session_state:
+    st.session_state["location_name"] = LOCATION_NAME
+
+if "location_lat" not in st.session_state:
+    st.session_state["location_lat"] = LOCATION_LAT
+
+if "location_lon" not in st.session_state:
+    st.session_state["location_lon"] = LOCATION_LON
 
 
 # -------------------------
@@ -223,7 +233,6 @@ def init_ee():
 
 
 init_ee()
-location_point = ee.Geometry.Point([LOCATION_LON, LOCATION_LAT])
 
 
 # -------------------------
@@ -324,7 +333,7 @@ def update_controls_from_text(text: str):
 
 
 # -------------------------
-# 6. TOP BAR (LIKE “BACK TO DASHBOARD / TITLE”)
+# 6. TOP BAR
 # -------------------------
 top_left, top_right = st.columns([0.5, 0.5])
 
@@ -365,29 +374,7 @@ left_col, right_col = st.columns([0.26, 0.74], gap="large")
 with left_col:
     st.markdown("<div class='sidebar-card'>", unsafe_allow_html=True)
 
-    # Data Layers section (visual only, no logic change)
-    st.markdown(
-        "<div class='sidebar-section-title'>Data Layers</div>",
-        unsafe_allow_html=True,
-    )
-    st.markdown(
-        "<div class='sidebar-subtext'>Static layer list for styling (map still shows Dynamic World).</div>",
-        unsafe_allow_html=True,
-    )
-
-    # Fake layer checkboxes just for UI look (do NOT affect logic)
-    _ = st.checkbox("Mountains", value=False)
-    _ = st.checkbox("Forest", value=True)
-    _ = st.checkbox("Vegetation", value=True)
-    _ = st.checkbox("Flood", value=False)
-    _ = st.checkbox("Desert", value=False)
-    _ = st.checkbox("Urban", value=True)
-    _ = st.checkbox("Sea", value=False)
-    _ = st.checkbox("Temperature", value=False)
-    _ = st.checkbox("Soil moisture", value=False)
-    _ = st.checkbox("Water", value=True)
-
-    st.markdown("---")
+    # (1) DATA LAYERS SECTION REMOVED AS REQUESTED
 
     # Analysis settings (logic identical, only style changed)
     st.markdown(
@@ -395,7 +382,7 @@ with left_col:
         unsafe_allow_html=True,
     )
     st.markdown(
-        "<div class='sidebar-subtext'>Choose function and years. Logic is unchanged.</div>",
+        "<div class='sidebar-subtext'>Choose function and years.</div>",
         unsafe_allow_html=True,
     )
 
@@ -467,8 +454,51 @@ with left_col:
 
     st.markdown(
         "<div class='sidebar-subtext' style='margin-top:6px;'>"
-        "Location is fixed to the study area. Use chat to request changes like "
-        "\"swap years\" or \"reset map\".</div>",
+        "Use the controls below to pick the map location.</div>",
+        unsafe_allow_html=True,
+    )
+
+    st.markdown("---")
+
+    # (2) LOCATION SELECTION (NEW)
+    st.markdown(
+        "<div class='sidebar-section-title'>Location</div>",
+        unsafe_allow_html=True,
+    )
+    st.markdown(
+        "<div class='sidebar-subtext'>Change the study area name and coordinates.</div>",
+        unsafe_allow_html=True,
+    )
+
+    # Name
+    location_name_input = st.text_input(
+        "Location name",
+        value=st.session_state["location_name"],
+    )
+
+    # Lat / Lon
+    col_lat, col_lon = st.columns(2)
+    with col_lat:
+        lat_input = st.number_input(
+            "Latitude",
+            value=float(st.session_state["location_lat"]),
+            format="%.6f",
+        )
+    with col_lon:
+        lon_input = st.number_input(
+            "Longitude",
+            value=float(st.session_state["location_lon"]),
+            format="%.6f",
+        )
+
+    # Update session state
+    st.session_state["location_name"] = location_name_input.strip() or LOCATION_NAME
+    st.session_state["location_lat"] = lat_input
+    st.session_state["location_lon"] = lon_input
+
+    st.markdown(
+        "<div class='sidebar-subtext' style='margin-top:4px;'>"
+        "The map and analysis will use this point as the center.</div>",
         unsafe_allow_html=True,
     )
 
@@ -530,7 +560,9 @@ with left_col:
             af = st.session_state["analysis_function"]
             ya = st.session_state["year_a"]
             yb = st.session_state["year_b"]
-            user_msg = f"Run {af} for {LOCATION_NAME} ({ya} → {yb})."
+            user_msg = (
+                f"Run {af} for {st.session_state['location_name']} ({ya} → {yb})."
+            )
 
         st.session_state["chat_history"].append({"role": "user", "content": user_msg})
         update_controls_from_text(user_msg)
@@ -546,6 +578,8 @@ with left_col:
                 "maps and changes over time in SIMPLE language. "
                 "The app has three analysis modes: change_detection, single_year, timeseries. "
                 f"Current mode: {af}, years: {ya}–{yb}. "
+                f"The current location is {st.session_state['location_name']} "
+                "centered on the provided latitude/longitude. "
                 "Explain clearly what the map likely shows and any key patterns."
             ),
         }
@@ -569,6 +603,11 @@ with right_col:
     ya = st.session_state["year_a"]
     yb = st.session_state["year_b"]
 
+    # current location values
+    current_name = st.session_state["location_name"]
+    current_lat = st.session_state["location_lat"]
+    current_lon = st.session_state["location_lon"]
+
     # Header row above maps
     title_left, title_center, title_right = st.columns([0.33, 0.34, 0.33])
     with title_left:
@@ -589,7 +628,7 @@ with right_col:
     with title_center:
         st.markdown(
             "<div style='text-align:center;font-size:11px;color:#6b7280;'>"
-            f"{LOCATION_NAME}</div>",
+            f"{current_name}</div>",
             unsafe_allow_html=True,
         )
     with title_right:
@@ -605,6 +644,9 @@ with right_col:
 
     # MAP(S)
     with st.spinner("Loading Dynamic World layers from Earth Engine..."):
+        # location point for Earth Engine (now uses selected coordinates)
+        location_point = ee.Geometry.Point([current_lon, current_lat])
+
         if af == "single_year":
             tile_urls = get_dw_tile_urls(location_point, ya, ya)
         else:
@@ -613,7 +655,7 @@ with right_col:
         if af == "change_detection":
             # Dual map: before / after (logic same as before)
             m = DualMap(
-                location=[LOCATION_LAT, LOCATION_LON],
+                location=[current_lat, current_lon],
                 zoom_start=11,
                 tiles=None,
             )
@@ -678,7 +720,7 @@ with right_col:
         else:
             # Single map (single_year or timeseries) – logic same
             m = folium.Map(
-                location=[LOCATION_LAT, LOCATION_LON],
+                location=[current_lat, current_lon],
                 zoom_start=11,
                 tiles=None,
                 control_scale=True,
@@ -768,7 +810,7 @@ with right_col:
 
     with ca2:
         st.markdown("<div class='metric-card'>", unsafe_allow_html=True)
-        st.markdown(
+        st.markmarkdown(
             "<div class='metric-label'>Time Span</div>",
             unsafe_allow_html=True,
         )
