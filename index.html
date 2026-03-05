@@ -5,7 +5,6 @@
   <title>EarthMonitor – Dynamic World Change Detection</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-  <!-- Leaflet CSS (for the map) -->
   <link
     rel="stylesheet"
     href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
@@ -15,10 +14,9 @@
 
   <style>
     :root {
-      /* MUCH more gray, less blue/black */
-      --bg-main: #111827;       /* page background */
-      --bg-nav: #111827;        /* top bar */
-      --bg-panel: #1f2933;      /* cards */
+      --bg-main: #111827;
+      --bg-nav: #111827;
+      --bg-panel: #1f2933;
       --bg-bottom: #111827;
       --border-subtle: #374151;
       --accent: #3b82f6;
@@ -71,7 +69,7 @@
     }
 
     .top-brand-title {
-      font-size: 26px;       /* MUCH BIGGER */
+      font-size: 26px;
       font-weight: 800;
       letter-spacing: 0.04em;
     }
@@ -111,11 +109,13 @@
       }
     }
 
-    /* LEFT SIDEBAR */
+    /* LEFT SIDEBAR  – key part changed */
     aside.sidebar {
       grid-area: sidebar;
       display: flex;
       flex-direction: column;
+      gap: 16px;      /* small space between cards */
+      height: 100%;   /* fill the row height */
     }
 
     .monitor-box,
@@ -128,7 +128,13 @@
     }
 
     .monitor-box {
-      margin-bottom: 40px;   /* space above chatbot */
+      flex: 0 0 auto;        /* natural height */
+    }
+
+    .chatbot-box {
+      flex: 1 1 auto;        /* STRETCHES to fill leftover space */
+      display: flex;
+      flex-direction: column;
     }
 
     .monitor-title {
@@ -206,11 +212,7 @@
       margin: 10px 0 8px;
     }
 
-    /* Chatbot card LOWER in sidebar */
-    .chatbot-box {
-      margin-top: 40px;  /* BIG move down */
-    }
-
+    /* Chatbot card internals */
     .chatbot-header {
       display: flex;
       justify-content: space-between;
@@ -234,9 +236,10 @@
       border: 1px solid #4b5563;
       background: #020617;
       padding: 8px;
-      height: 120px;
+      flex: 1;                 /* this grows inside chatbot-box */
       overflow-y: auto;
       font-size: 12px;
+      margin-bottom: 8px;
     }
 
     .message {
@@ -265,7 +268,7 @@
     .chat-form {
       display: flex;
       gap: 6px;
-      margin-top: 8px;
+      margin-top: auto;
     }
 
     .chat-input {
@@ -380,7 +383,6 @@
 </head>
 <body>
   <div class="app-shell">
-    <!-- TOP BAR -->
     <header class="top-bar">
       <div class="top-brand">
         <div class="top-brand-title">EarthMonitor</div>
@@ -391,11 +393,9 @@
       </div>
     </header>
 
-    <!-- MAIN CONTENT -->
     <main class="app-main">
       <!-- LEFT SIDEBAR -->
       <aside class="sidebar">
-        <!-- Monitor Functions card -->
         <section class="monitor-box">
           <div class="monitor-title">Monitor Functions</div>
           <div class="monitor-subtitle">
@@ -462,7 +462,6 @@
           </div>
         </section>
 
-        <!-- Assistant / Chat card (lower) -->
         <section class="chatbot-box">
           <div class="chatbot-header">
             <span>Assistant</span>
@@ -532,7 +531,6 @@
     </main>
   </div>
 
-  <!-- Leaflet JS -->
   <script
     src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
     integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
@@ -540,7 +538,6 @@
   ></script>
 
   <script>
-    // MAP
     const map = L.map("map").setView([26.3, 55.28], 3);
     L.tileLayer(
       "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
