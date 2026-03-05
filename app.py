@@ -39,7 +39,7 @@ def get_initial_chat_history():
 
 
 # -------------------------
-# 1. PAGE CONFIG & GLOBAL CSS (FULL APP STYLING)
+# 1. PAGE CONFIG & SIMPLE CSS
 # -------------------------
 st.set_page_config(
     page_title="Change Detection Analysis – Dynamic World Explorer",
@@ -47,93 +47,72 @@ st.set_page_config(
     layout="wide",
 )
 
+# Simple, clean style (light dashboard)
 st.markdown(
     """
     <style>
-    /* Global app background + typography */
     .stApp {
-        background: radial-gradient(circle at top left, #020617, #020617);
-        color: #e5e7eb;
+        background-color: #f5f5f7;
         font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
     }
 
     .block-container {
+        max-width: 1300px;
         padding-top: 0.5rem !important;
         padding-bottom: 0.5rem !important;
-        max-width: 1300px;
     }
 
-    /* Generic card */
-    .panel-card {
-        background: #020617;
-        border-radius: 18px;
-        box-shadow: 0 22px 45px rgba(15, 23, 42, 0.75);
-        padding: 18px 18px 16px;
-        border: 1px solid #1e293b;
+    .card {
+        background-color: #ffffff;
+        border-radius: 14px;
+        border: 1px solid #e5e7eb;
+        padding: 16px 18px;
+        box-shadow: 0 6px 18px rgba(15, 23, 42, 0.06);
     }
 
-    /* Left sidebar look */
     .sidebar-card {
-        background: #020617;
-        border-radius: 18px;
-        box-shadow: 0 22px 45px rgba(15, 23, 42, 0.9);
-        padding: 18px 16px 16px;
-        border: 1px solid #1f2937;
+        background-color: #ffffff;
+        border-radius: 14px;
+        border: 1px solid #e5e7eb;
+        padding: 16px 16px;
+        box-shadow: 0 6px 18px rgba(15, 23, 42, 0.06);
     }
 
     .sidebar-section-title {
         font-size: 12px;
         font-weight: 600;
-        color: #e5e7eb;
-        letter-spacing: 0.08em;
+        color: #111827;
         text-transform: uppercase;
+        letter-spacing: 0.08em;
         margin-bottom: 4px;
     }
 
     .sidebar-subtext {
         font-size: 11px;
-        color: #9ca3af;
-    }
-
-    /* Top page header */
-    .top-header-wrapper {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-top: 6px;
-        margin-bottom: 10px;
-    }
-
-    .top-header-left {
-        display: flex;
-        flex-direction: column;
-        gap: 2px;
+        color: #6b7280;
     }
 
     .top-title {
-        font-size: 20px;
+        font-size: 22px;
         font-weight: 600;
-        color: #f9fafb;
+        color: #111827;
     }
 
     .top-subtitle {
         font-size: 12px;
-        color: #9ca3af;
+        color: #6b7280;
     }
 
     .back-link {
-        font-size: 12px;
-        color: #9ca3af;
+        font-size: 11px;
+        color: #6b7280;
         cursor: pointer;
-    }
-
-    .back-link:hover {
-        color: #e5e7eb;
     }
 
     .brand-badge {
         font-size: 11px;
-        color: #6b7280;
+        color: #9ca3af;
+        text-align: right;
     }
 
     /* Buttons */
@@ -142,33 +121,31 @@ st.markdown(
         padding: 0.35rem 0.9rem;
         font-size: 13px;
         font-weight: 500;
-        background: linear-gradient(135deg, #2563eb, #4f46e5);
+        background: #2563eb;
         border: none;
-        box-shadow: 0 8px 18px rgba(37, 99, 235, 0.45);
         color: white;
     }
 
     .stButton > button:hover {
-        box-shadow: 0 12px 26px rgba(37, 99, 235, 0.7);
-        transform: translateY(-0.5px);
+        background: #1d4ed8;
     }
 
     /* Chat container */
     .chat-container {
-        border-radius: 14px;
-        background: #020617;
-        border: 1px solid #1f2937;
+        border-radius: 10px;
+        border: 1px solid #e5e7eb;
         padding: 10px;
         height: 220px;
         overflow-y: auto;
+        background-color: #f9fafb;
     }
 
     .chat-bubble-user {
         max-width: 90%;
         padding: 7px 10px;
         border-radius: 12px;
-        background: #1d4ed8;
-        color: #e5e7eb;
+        background: #2563eb;
+        color: #ffffff;
         font-size: 13px;
         line-height: 1.4;
         white-space: pre-wrap;
@@ -178,95 +155,43 @@ st.markdown(
         max-width: 90%;
         padding: 7px 10px;
         border-radius: 12px;
-        background: #111827;
-        color: #e5e7eb;
+        background: #e5e7eb;
+        color: #111827;
         font-size: 13px;
         line-height: 1.4;
         white-space: pre-wrap;
     }
 
-    /* Hide fullscreen button on folium */
-    button[title="View fullscreen"] {
-        display: none;
-    }
-
-    /* Change analysis cards */
-    .metric-card {
-        background: #020617;
-        border-radius: 14px;
-        border: 1px solid #1f2937;
-        padding: 10px 12px;
-    }
-
-    .metric-label {
-        font-size: 11px;
-        color: #9ca3af;
-        margin-bottom: 2px;
-        text-transform: uppercase;
-        letter-spacing: 0.06em;
-    }
-
-    .metric-value {
-        font-size: 18px;
-        font-weight: 600;
-        color: #f9fafb;
-    }
-
-    .metric-caption {
-        font-size: 11px;
-        color: #9ca3af;
-        margin-top: 4px;
-    }
-
-    /* Tweak common Streamlit widgets to look more "web" */
+    /* Inputs look clean */
     .stTextInput input, .stNumberInput input {
-        background-color: #020617 !important;
-        border-radius: 10px !important;
-        border: 1px solid #1f2937 !important;
-        color: #e5e7eb !important;
+        background-color: #ffffff !important;
+        border-radius: 8px !important;
+        border: 1px solid #d1d5db !important;
         font-size: 12px !important;
         padding: 6px 10px !important;
     }
 
     .stTextInput input:focus, .stNumberInput input:focus {
         border-color: #2563eb !important;
-        box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.4) !important;
+        box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.3) !important;
     }
 
     .stSelectbox div[data-baseweb="select"] > div {
-        background-color: #020617 !important;
-        border-radius: 10px !important;
-        border: 1px solid #1f2937 !important;
+        background-color: #ffffff !important;
+        border-radius: 8px !important;
+        border: 1px solid #d1d5db !important;
         font-size: 12px !important;
     }
 
-    .stRadio > label {
-        font-size: 11px;
-        color: #9ca3af;
-    }
-
-    .stRadio div[role="radiogroup"] > label {
-        display: block;
-        padding: 6px 10px;
-        border-radius: 10px;
-        border: 1px solid #1f2937;
-        background: #020617;
-        margin-bottom: 4px;
-        font-size: 12px;
-        color: #e5e7eb;
-        cursor: pointer;
-    }
-
-    .stRadio div[role="radiogroup"] > label:hover {
-        border-color: #374151;
-        background: #030712;
-    }
-
-    /* Small caption under widgets */
     .field-caption {
         font-size: 10px;
-        color: #6b7280;
+        color: #9ca3af;
         margin-top: 3px;
+    }
+
+    /* Legend in map */
+    button[title="View fullscreen"] {
+        display: none;
     }
     </style>
     """,
@@ -275,7 +200,7 @@ st.markdown(
 
 
 # -------------------------
-# 2. SESSION STATE (LOGIC SAME + CITY-BASED LOCATION)
+# 2. SESSION STATE
 # -------------------------
 if "analysis_function" not in st.session_state:
     st.session_state["analysis_function"] = "change_detection"
@@ -306,7 +231,7 @@ if "location_city" not in st.session_state:
 
 
 # -------------------------
-# 3. INIT EARTH ENGINE (UNCHANGED LOGIC)
+# 3. INIT EARTH ENGINE
 # -------------------------
 def init_ee():
     if getattr(st.session_state, "ee_initialized", False):
@@ -337,7 +262,7 @@ init_ee()
 
 
 # -------------------------
-# 4. MAP LEGEND (INSIDE MAP, LOGIC SAME)
+# 4. MAP LEGEND
 # -------------------------
 def add_dw_legend_to_map(m):
     items_html = ""
@@ -345,9 +270,9 @@ def add_dw_legend_to_map(m):
         items_html += (
             f"<div style='display:flex;align-items:center;margin-bottom:3px;'>"
             f"<span style='display:inline-block;width:12px;height:12px;"
-            f"border-radius:3px;border:1px solid #64748b;"
+            f"border-radius:3px;border:1px solid #9ca3af;"
             f"background:#{color};margin-right:6px;'></span>"
-            f"<span style='font-size:11px;color:#e5e7eb;'>{label}</span>"
+            f"<span style='font-size:11px;color:#111827;'>{label}</span>"
             f"</div>"
         )
 
@@ -357,13 +282,13 @@ def add_dw_legend_to_map(m):
         bottom: 10px;
         right: 10px;
         z-index: 9999;
-        background-color: rgba(15, 23, 42, 0.96);
+        background-color: rgba(255,255,255,0.95);
         padding: 8px 10px;
-        border-radius: 10px;
-        border: 1px solid #1f2937;
-        box-shadow: 0 10px 24px rgba(0,0,0,0.7);
+        border-radius: 8px;
+        border: 1px solid #e5e7eb;
+        box-shadow: 0 8px 16px rgba(15,23,42,0.25);
     ">
-      <div style="font-size:11px;font-weight:600;color:#e5e7eb;margin-bottom:4px;">
+      <div style="font-size:11px;font-weight:600;color:#111827;margin-bottom:4px;">
         Dynamic World
       </div>
       {items_html}
@@ -373,7 +298,7 @@ def add_dw_legend_to_map(m):
 
 
 # -------------------------
-# 5. CHAT → MAP CONTROL (SAME LOGIC)
+# 5. CHAT → MAP CONTROL
 # -------------------------
 def update_controls_from_text(text: str):
     t = text.lower().strip()
@@ -434,35 +359,27 @@ def update_controls_from_text(text: str):
 
 
 # -------------------------
-# 6. TOP BAR (HTML-STYLE)
+# 6. TOP BAR
 # -------------------------
 top_left, top_right = st.columns([0.5, 0.5])
 
 with top_left:
     st.markdown(
-        """
-        <div class="back-link">◀ Back to Dashboard</div>
-        """,
+        "<div class='back-link'>◀ Back to Dashboard</div>",
         unsafe_allow_html=True,
     )
 with top_right:
     st.markdown(
-        """
-        <div class="brand-badge">
-            Dynamic World · Google Earth Engine
-        </div>
-        """,
+        "<div class='brand-badge'>Dynamic World · Google Earth Engine</div>",
         unsafe_allow_html=True,
     )
 
 st.markdown(
     """
-    <div class="top-header-wrapper">
-      <div class="top-header-left">
-        <div class="top-title">Change Detection Analysis</div>
-        <div class="top-subtitle">
-          Compare environmental changes over time for your study area.
-        </div>
+    <div style="margin-top:4px;margin-bottom:10px;">
+      <div class="top-title">Change Detection Analysis</div>
+      <div class="top-subtitle">
+        Compare environmental changes over time for your study area.
       </div>
     </div>
     """,
@@ -471,9 +388,9 @@ st.markdown(
 
 
 # -------------------------
-# 7. MAIN LAYOUT: LEFT SIDEBAR + RIGHT CONTENT
+# 7. MAIN LAYOUT
 # -------------------------
-left_col, right_col = st.columns([0.26, 0.74], gap="large")
+left_col, right_col = st.columns([0.27, 0.73], gap="large")
 
 # ===== LEFT SIDEBAR =====
 with left_col:
@@ -485,7 +402,7 @@ with left_col:
         unsafe_allow_html=True,
     )
     st.markdown(
-        "<div class='sidebar-subtext'>Choose function and years.</div>",
+        "<div class='sidebar-subtext'>Choose which analysis to run and the years.</div>",
         unsafe_allow_html=True,
     )
 
@@ -507,10 +424,7 @@ with left_col:
     st.session_state["analysis_function"] = selected_func
 
     if selected_func == "single_year":
-        st.markdown(
-            "<span class='sidebar-subtext'>Year</span>",
-            unsafe_allow_html=True,
-        )
+        st.caption("Year")
         idx = YEARS.index(st.session_state["year_a"])
         year_single = st.selectbox(
             label="",
@@ -523,13 +437,8 @@ with left_col:
     else:
         col_a, col_b = st.columns(2)
         with col_a:
-            label = (
-                "Start year (A)" if selected_func == "timeseries" else "Year A (Before)"
-            )
-            st.markdown(
-                f"<span class='sidebar-subtext'>{label}</span>",
-                unsafe_allow_html=True,
-            )
+            label = "Year A (Before)" if selected_func != "timeseries" else "Start year (A)"
+            st.caption(label)
             idx_a = YEARS.index(st.session_state["year_a"])
             year_a = st.selectbox(
                 label="",
@@ -539,13 +448,8 @@ with left_col:
             )
             st.session_state["year_a"] = year_a
         with col_b:
-            label = (
-                "End year (B)" if selected_func == "timeseries" else "Year B (After)"
-            )
-            st.markdown(
-                f"<span class='sidebar-subtext'>{label}</span>",
-                unsafe_allow_html=True,
-            )
+            label = "Year B (After)" if selected_func != "timeseries" else "End year (B)"
+            st.caption(label)
             idx_b = YEARS.index(st.session_state["year_b"])
             year_b = st.selectbox(
                 label="",
@@ -556,13 +460,13 @@ with left_col:
             st.session_state["year_b"] = year_b
 
     st.markdown(
-        "<div class='field-caption'>Use years to define before/after or time series span.</div>",
+        "<div class='field-caption'>These years are used for the maps and the chatbot explanation.</div>",
         unsafe_allow_html=True,
     )
 
     st.markdown("---")
 
-    # Location selection by city
+    # Location (city)
     st.markdown(
         "<div class='sidebar-section-title'>Location</div>",
         unsafe_allow_html=True,
@@ -606,33 +510,31 @@ with left_col:
                 st.warning("I couldn't find that city. Please check the spelling.")
         except (GeocoderUnavailable, GeocoderTimedOut):
             st.warning(
-                "Geocoding service is not available right now. "
-                "You can try again later."
+                "Geocoding service is not available right now. Try again later."
             )
         except Exception:
             st.warning(
-                "Something went wrong while looking up the city. "
-                "Please try again or use another city."
+                "Something went wrong while looking up the city. Please try again."
             )
 
     st.markdown(
-        "<div class='field-caption'>The Earth Engine point is centered on this city.</div>",
+        "<div class='field-caption'>Earth Engine uses this point as the center of the study area.</div>",
         unsafe_allow_html=True,
     )
 
     st.markdown("---")
 
-    # Chatbot (no reset button, just automatic on new session)
+    # Chatbot
     st.markdown(
-        "<div class='sidebar-section-title' style='margin-bottom:2px;'>Chatbot</div>",
+        "<div class='sidebar-section-title'>Chatbot</div>",
         unsafe_allow_html=True,
     )
     st.markdown(
-        "<div class='sidebar-subtext'>Ask about changes or tweak settings via text.</div>",
+        "<div class='sidebar-subtext'>Ask about changes or give text commands like “swap years”.</div>",
         unsafe_allow_html=True,
     )
     st.markdown(
-        "<div class='field-caption'>Chat starts fresh every time you open a new session.</div>",
+        "<div class='field-caption'>Chat starts fresh each time a new session is opened.</div>",
         unsafe_allow_html=True,
     )
 
@@ -652,7 +554,7 @@ with left_col:
             f"""
             <div style="display:flex;justify-content:{align};margin-bottom:6px;">
               <div>
-                <div style="font-size:10px;color:#6b7280;margin-bottom:2px;
+                <div style="font-size:10px;color:#9ca3af;margin-bottom:2px;
                             text-align:{'right' if msg['role']=='user' else 'left'};">
                     {name}
                 </div>
@@ -669,7 +571,7 @@ with left_col:
     # Chat input
     with st.form("chat_form", clear_on_submit=True):
         placeholder = (
-            "Example: \"Explain the main changes\", "
+            "Examples: \"Explain the main changes\", "
             "\"swap years\", \"reset map\"..."
         )
         user_text = st.text_input("", placeholder=placeholder)
@@ -682,9 +584,7 @@ with left_col:
             af = st.session_state["analysis_function"]
             ya = st.session_state["year_a"]
             yb = st.session_state["year_b"]
-            user_msg = (
-                f"Run {af} for {st.session_state['location_name']} ({ya} → {yb})."
-            )
+            user_msg = f"Run {af} for {st.session_state['location_name']} ({ya} → {yb})."
 
         st.session_state["chat_history"].append({"role": "user", "content": user_msg})
         update_controls_from_text(user_msg)
@@ -714,59 +614,47 @@ with left_col:
             {"role": "assistant", "content": reply}
         )
 
-    st.markdown("</div>", unsafe_allow_html=True)  # end sidebar card
+    st.markdown("</div>", unsafe_allow_html=True)  # end sidebar-card
 
 
-# ===== RIGHT CONTENT: MAP + CHANGE ANALYSIS CARDS =====
+# ===== RIGHT CONTENT =====
 with right_col:
-    st.markdown("<div class='panel-card'>", unsafe_allow_html=True)
+    st.markdown("<div class='card'>", unsafe_allow_html=True)
 
     af = st.session_state["analysis_function"]
     ya = st.session_state["year_a"]
     yb = st.session_state["year_b"]
 
-    # current location values
     current_name = st.session_state["location_name"]
     current_lat = st.session_state["location_lat"]
     current_lon = st.session_state["location_lon"]
 
-    # Header row above maps
-    title_left, title_center, title_right = st.columns([0.33, 0.34, 0.33])
-    with title_left:
+    # Header row above map
+    c1, c2, c3 = st.columns([0.33, 0.34, 0.33])
+    with c1:
         if af == "change_detection":
-            st.markdown(
-                "<div style='font-size:13px;font-weight:600;color:#e5e7eb;'>Before</div>",
-                unsafe_allow_html=True,
-            )
-            st.markdown(
-                f"<div style='font-size:11px;color:#9ca3af;'>{ya}</div>",
-                unsafe_allow_html=True,
-            )
+            st.markdown("**Before**")
+            st.caption(str(ya))
         else:
-            st.markdown(
-                "<div style='font-size:13px;font-weight:600;color:#e5e7eb;'>Map view</div>",
-                unsafe_allow_html=True,
-            )
-    with title_center:
+            st.markdown("**Map view**")
+    with c2:
         st.markdown(
-            "<div style='text-align:center;font-size:11px;color:#6b7280;'>"
-            f"{current_name}</div>",
+            f"<p style='text-align:center;font-size:11px;color:#6b7280;'>{current_name}</p>",
             unsafe_allow_html=True,
         )
-    with title_right:
+    with c3:
         if af == "change_detection":
             st.markdown(
-                "<div style='text-align:right;font-size:13px;font-weight:600;color:#e5e7eb;'>After</div>",
+                "<p style='text-align:right;font-weight:600;'>After</p>",
                 unsafe_allow_html=True,
             )
             st.markdown(
-                f"<div style='text-align:right;font-size:11px;color:#9ca3af;'>{yb}</div>",
+                f"<p style='text-align:right;font-size:11px;color:#6b7280;'>{yb}</p>",
                 unsafe_allow_html=True,
             )
 
-    # MAP(S)
+    # Map
     with st.spinner("Loading Dynamic World layers from Earth Engine..."):
-        # location point for Earth Engine (city-based coordinates)
         location_point = ee.Geometry.Point([current_lon, current_lat])
 
         if af == "single_year":
@@ -775,7 +663,6 @@ with right_col:
             tile_urls = get_dw_tile_urls(location_point, ya, yb)
 
         if af == "change_detection":
-            # Dual map: before / after
             m = DualMap(
                 location=[current_lat, current_lon],
                 zoom_start=11,
@@ -840,7 +727,6 @@ with right_col:
             add_dw_legend_to_map(m)
 
         else:
-            # Single map (single_year or timeseries)
             m = folium.Map(
                 location=[current_lat, current_lon],
                 zoom_start=11,
@@ -903,71 +789,31 @@ with right_col:
 
     st_folium(m, height=520, use_container_width=True)
 
-    # CHANGE ANALYSIS SECTION (visual only)
-    st.markdown("<br>", unsafe_allow_html=True)
-    st.markdown(
-        "<div style='font-size:13px;font-weight:600;color:#e5e7eb;margin-bottom:6px;'>"
-        "Change Analysis</div>",
-        unsafe_allow_html=True,
-    )
+    # Change analysis (simple text)
+    st.markdown("---")
+    st.markdown("**Change Analysis (summary)**")
 
-    ca1, ca2, ca3 = st.columns([0.33, 0.33, 0.34])
-
+    ca1, ca2, ca3 = st.columns(3)
     with ca1:
-        st.markdown("<div class='metric-card'>", unsafe_allow_html=True)
-        st.markdown(
-            "<div class='metric-label'>Overall Change</div>",
-            unsafe_allow_html=True,
-        )
-        st.markdown(
-            "<div class='metric-value'>N/A</div>",
-            unsafe_allow_html=True,
-        )
-        st.markdown(
-            "<div class='metric-caption'>Numerical stats require Phase-1 outputs.</div>",
-            unsafe_allow_html=True,
-        )
-        st.markdown("</div>", unsafe_allow_html=True)
-
+        st.caption("Overall change")
+        st.write("N/A")
+        st.caption("Numerical stats need Phase-1 outputs.")
     with ca2:
-        st.markdown("<div class='metric-card'>", unsafe_allow_html=True)
-        st.markdown(
-            "<div class='metric-label'>Time Span</div>",
-            unsafe_allow_html=True,
-        )
+        st.caption("Time span")
         if af == "single_year":
             span_text = "Single year"
         else:
             span_text = f"{abs(yb - ya)} years" if yb != ya else "Same year"
-        st.markdown(
-            f"<div class='metric-value'>{span_text}</div>",
-            unsafe_allow_html=True,
-        )
-        st.markdown(
-            f"<div class='metric-caption'>From {ya} to {yb}.</div>",
-            unsafe_allow_html=True,
-        )
-        st.markdown("</div>", unsafe_allow_html=True)
-
+        st.write(span_text)
+        st.caption(f"From {ya} to {yb}.")
     with ca3:
-        st.markdown("<div class='metric-card'>", unsafe_allow_html=True)
-        st.markdown(
-            "<div class='metric-label'>Current Mode</div>",
-            unsafe_allow_html=True,
-        )
+        st.caption("Current mode")
         mode_name = {
             "change_detection": "Change detection",
             "single_year": "Single year",
             "timeseries": "Time series",
         }[af]
-        st.markdown(
-            f"<div class='metric-value'>{mode_name}</div>",
-            unsafe_allow_html=True,
-        )
-        st.markdown(
-            "<div class='metric-caption'>Use chat or sidebar to switch mode.</div>",
-            unsafe_allow_html=True,
-        )
-        st.markdown("</div>", unsafe_allow_html=True)
+        st.write(mode_name)
+        st.caption("Change this on the left panel or using chat.")
 
-    st.markdown("</div>", unsafe_allow_html=True)  # end right panel card
+    st.markdown("</div>", unsafe_allow_html=True)  # end card
