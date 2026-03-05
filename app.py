@@ -21,7 +21,7 @@ from chat_utils import ask_chatbot
 
 
 # -------------------------
-# 1. PAGE CONFIG & CSS (user-friendly one-page layout)
+# 1. PAGE CONFIG & GLOBAL CSS
 # -------------------------
 st.set_page_config(
     page_title="earthmonitor – Dynamic World Explorer",
@@ -35,105 +35,294 @@ st.markdown(
     html, body, .stApp {
         height: 100vh;
         overflow: hidden;
-    }
-
-    .block-container {
-        padding-top: 0.5rem;
-        padding-bottom: 0.5rem;
-        max-width: 1300px;
-        height: 100%;
-    }
-
-    .full-height-layout {
-        display: flex;
-        flex-direction: column;
-        height: 100%;
-        gap: 0.4rem;
-    }
-
-    .stApp {
-        background: radial-gradient(circle at top left, #e0f2fe, #f9fafb);
+        background: radial-gradient(circle at top left, #020617, #020617 40%, #020617);
         font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
     }
 
-    .panel-card {
-        background: #ffffff;
+    .block-container {
+        padding-top: 0.6rem;
+        padding-bottom: 0.6rem;
+        padding-left: 1.2rem;
+        padding-right: 1.2rem;
+        max-width: 1400px;
+        height: 100%;
+    }
+
+    .app-shell {
+        display: flex;
+        flex-direction: row;
+        height: calc(100vh - 1.2rem);
+        gap: 0.8rem;
+        color: #e5e7eb;
+    }
+
+    /* Sidebar (left) */
+    .sidebar-card {
+        background: radial-gradient(circle at top left, #020617, #020617);
         border-radius: 18px;
-        box-shadow: 0 18px 40px rgba(15, 23, 42, 0.16);
-        padding: 16px 18px 14px;
-    }
-
-    .stButton > button {
-        border-radius: 999px;
-        padding: 0.45rem 0.9rem;
-        font-size: 13px;
-        font-weight: 500;
-        background: linear-gradient(135deg, #2563eb, #4f46e5);
-        border: none;
-        box-shadow: 0 8px 18px rgba(37, 99, 235, 0.35);
-    }
-
-    .stButton > button:hover {
-        box-shadow: 0 12px 24px rgba(37, 99, 235, 0.45);
-    }
-
-    .chat-box {
-        border-radius: 14px;
-        background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
-        border: 1px solid #e2e8f0;
-        padding: 10px 12px;
-        height: 280px;
+        border: 1px solid rgba(148, 163, 184, 0.35);
+        box-shadow: 0 18px 40px rgba(15, 23, 42, 0.6);
+        padding: 14px 14px 10px;
+        height: 100%;
         display: flex;
         flex-direction: column;
+        gap: 10px;
+    }
+
+    .sidebar-section {
+        background: linear-gradient(145deg, rgba(15,23,42,0.95), rgba(15,23,42,0.9));
+        border-radius: 14px;
+        padding: 10px 11px;
+        border: 1px solid rgba(51, 65, 85, 0.9);
+    }
+
+    .sidebar-title {
+        font-size: 11px;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: #9ca3af;
+        font-weight: 600;
+        margin-bottom: 4px;
+    }
+
+    .sidebar-heading {
+        font-size: 13px;
+        font-weight: 600;
+        color: #e5e7eb;
+        margin-bottom: 2px;
+    }
+
+    /* Chat box */
+    .chat-box {
+        border-radius: 14px;
+        background: radial-gradient(circle at top, #020617, #020617 40%, #020617);
+        border: 1px solid rgba(51, 65, 85, 0.95);
+        padding: 10px 11px 9px;
+        height: 260px;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .chat-header {
+        font-size: 12px;
+        font-weight: 600;
+        color: #e5e7eb;
+        margin-bottom: 2px;
+    }
+
+    .chat-sub {
+        font-size: 10px;
+        color: #9ca3af;
+        margin-bottom: 6px;
     }
 
     .chat-messages {
         flex: 1;
         overflow-y: auto;
-        margin-bottom: 8px;
+        margin-bottom: 6px;
         padding-right: 4px;
         scrollbar-width: thin;
     }
 
     .chat-bubble-user {
-        max-width: 90%;
+        max-width: 94%;
         padding: 8px 10px;
         border-radius: 12px;
-        background: #2563eb;
-        color: #ffffff;
-        font-size: 13px;
+        background: linear-gradient(135deg, #22c55e, #16a34a);
+        color: #f9fafb;
+        font-size: 12px;
         line-height: 1.4;
         white-space: pre-wrap;
     }
 
     .chat-bubble-assistant {
-        max-width: 90%;
+        max-width: 94%;
         padding: 8px 10px;
         border-radius: 12px;
-        background: #f3f4f6;
-        color: #111827;
-        font-size: 13px;
+        background: rgba(15, 23, 42, 0.96);
+        border: 1px solid rgba(55, 65, 81, 0.95);
+        color: #e5e7eb;
+        font-size: 12px;
         line-height: 1.4;
         white-space: pre-wrap;
     }
 
-    .step-badge {
-        font-size: 10px;
-        padding: 3px 10px;
+    /* Buttons & inputs */
+    .stButton > button {
         border-radius: 999px;
-        font-weight: 600;
-        letter-spacing: 0.02em;
+        padding: 0.35rem 0.9rem;
+        font-size: 12px;
+        font-weight: 500;
+        background: linear-gradient(135deg, #22c55e, #16a34a);
+        border: none;
+        color: #f9fafb;
+        box-shadow: 0 12px 30px rgba(22, 163, 74, 0.55);
+    }
+    .stButton > button:hover {
+        box-shadow: 0 18px 40px rgba(22, 163, 74, 0.75);
     }
 
     .stRadio > div {
-        gap: 0.5rem;
+        gap: 0.4rem;
     }
-    .stSelectbox > div {
-        min-height: 2.25rem;
+    .stSelectbox > div > div {
+        min-height: 2.1rem;
     }
     .stTextInput > div > input {
-        border-radius: 10px;
+        border-radius: 999px;
         padding: 0.5rem 0.75rem;
+        background: #020617;
+        border: 1px solid #1e293b;
+        color: #e5e7eb;
+        font-size: 12px;
+    }
+
+    /* Map + main content (right) */
+    .main-column {
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        gap: 0.6rem;
+    }
+
+    .main-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 4px 4px 2px;
+    }
+
+    .back-link {
+        font-size: 11px;
+        color: #9ca3af;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        cursor: default;
+    }
+
+    .back-pill {
+        width: 22px;
+        height: 22px;
+        border-radius: 999px;
+        border: 1px solid rgba(51,65,85,0.9);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+        color: #e5e7eb;
+        background: rgba(15,23,42,0.9);
+    }
+
+    .title-block {
+        text-align: center;
+        flex: 1;
+    }
+
+    .title-main {
+        font-size: 15px;
+        font-weight: 600;
+        color: #f9fafb;
+    }
+
+    .title-sub {
+        font-size: 11px;
+        color: #9ca3af;
+    }
+
+    .brand-logo {
+        font-size: 15px;
+        font-weight: 700;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: #f9fafb;
+    }
+
+    .brand-logo span {
+        color: #22c55e;
+    }
+
+    .map-card {
+        background: radial-gradient(circle at top, #020617, #020617 40%, #020617);
+        border-radius: 20px;
+        border: 1px solid rgba(30, 64, 175, 0.6);
+        box-shadow: 0 22px 50px rgba(15, 23, 42, 0.9);
+        padding: 12px 12px 10px;
+    }
+
+    .map-header-row {
+        display: grid;
+        grid-template-columns: 1.3fr 1fr 1.3fr;
+        align-items: center;
+        margin-bottom: 8px;
+        font-size: 11px;
+        color: #9ca3af;
+    }
+
+    .map-label {
+        font-size: 12px;
+        font-weight: 600;
+        color: #f9fafb;
+    }
+
+    .map-chip {
+        display: inline-flex;
+        align-items: center;
+        padding: 2px 10px;
+        border-radius: 999px;
+        font-size: 11px;
+        font-weight: 600;
+    }
+
+    .chip-before {
+        background: rgba(2, 6, 23, 0.85);
+        border: 1px solid rgba(59, 130, 246, 0.9);
+        color: #bfdbfe;
+    }
+
+    .chip-after {
+        background: rgba(2, 6, 23, 0.85);
+        border: 1px solid rgba(22, 163, 74, 0.9);
+        color: #bbf7d0;
+        justify-self: end;
+    }
+
+    .map-date {
+        font-size: 11px;
+        color: #9ca3af;
+    }
+
+    .metrics-row {
+        display: grid;
+        grid-template-columns: 1.1fr 0.9fr 1.1fr;
+        gap: 10px;
+        margin-top: 10px;
+    }
+
+    .metric-card {
+        background: rgba(15,23,42,0.98);
+        border-radius: 14px;
+        padding: 9px 11px;
+        border: 1px solid rgba(30, 64, 175, 0.6);
+        font-size: 11px;
+    }
+
+    .metric-label {
+        font-size: 11px;
+        color: #9ca3af;
+        margin-bottom: 4px;
+    }
+
+    .metric-value {
+        font-size: 14px;
+        font-weight: 600;
+        color: #f9fafb;
+    }
+
+    .metric-sub {
+        font-size: 11px;
+        color: #9ca3af;
+        margin-top: 2px;
     }
 
     button[title="View fullscreen"] {
@@ -144,9 +333,8 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-
 # -------------------------
-# 2. SESSION STATE (function + years + chat)
+# 2. SESSION STATE
 # -------------------------
 if "analysis_function" not in st.session_state:
     st.session_state["analysis_function"] = "change_detection"
@@ -174,7 +362,7 @@ if "chat_history" not in st.session_state:
 
 
 # -------------------------
-# 3. INIT GOOGLE EARTH ENGINE (service account)
+# 3. INIT GOOGLE EARTH ENGINE
 # -------------------------
 def init_ee():
     if getattr(st.session_state, "ee_initialized", False):
@@ -212,7 +400,7 @@ location_point = ee.Geometry.Point([LOCATION_LON, LOCATION_LAT])
 
 
 # -------------------------
-# 4. MAP LEGEND (inside map)
+# 4. MAP LEGEND
 # -------------------------
 def add_dw_legend_to_map(m):
     items_html = ""
@@ -220,9 +408,9 @@ def add_dw_legend_to_map(m):
         items_html += (
             f"<div style='display:flex;align-items:center;margin-bottom:3px;'>"
             f"<span style='display:inline-block;width:12px;height:12px;"
-            f"border-radius:3px;border:1px solid #d1d5db;"
+            f"border-radius:3px;border:1px solid #0f172a;"
             f"background:#{color};margin-right:6px;'></span>"
-            f"<span style='font-size:11px;color:#374151;'>{label}</span>"
+            f"<span style='font-size:11px;color:#e5e7eb;'>{label}</span>"
             f"</div>"
         )
 
@@ -232,13 +420,13 @@ def add_dw_legend_to_map(m):
         bottom: 10px;
         right: 10px;
         z-index: 9999;
-        background-color: rgba(255, 255, 255, 0.95);
-        padding: 6px 8px;
-        border-radius: 10px;
-        border: 1px solid #e5e7eb;
-        box-shadow: 0 6px 14px rgba(15, 23, 42, 0.18);
+        background-color: rgba(15, 23, 42, 0.96);
+        padding: 7px 9px;
+        border-radius: 12px;
+        border: 1px solid rgba(51, 65, 85, 0.95);
+        box-shadow: 0 10px 26px rgba(15, 23, 42, 0.95);
     ">
-      <div style="font-size:11px;font-weight:600;color:#111827;margin-bottom:4px;">
+      <div style="font-size:11px;font-weight:600;color:#f9fafb;margin-bottom:4px;">
         Dynamic World
       </div>
       {items_html}
@@ -248,7 +436,7 @@ def add_dw_legend_to_map(m):
 
 
 # -------------------------
-# 5. CHAT → CONTROL MAP (simple parser)
+# 5. CHAT → CONTROL MAP
 # -------------------------
 def update_controls_from_text(text: str):
     t = text.lower()
@@ -279,57 +467,39 @@ def update_controls_from_text(text: str):
 
 
 # -------------------------
-# 6. LAYOUT (header + left/right panels)
+# 6. LAYOUT (SIDEBAR + MAIN)
 # -------------------------
-st.markdown("<div class='full-height-layout'>", unsafe_allow_html=True)
+st.markdown("<div class='app-shell'>", unsafe_allow_html=True)
 
-# Top: brand header
-st.markdown(
-    """
-    <div style="text-align:center;margin-bottom:0.5rem;">
-      <div style="
-        font-size:36px;
-        font-weight:800;
-        letter-spacing:0.14em;
-        text-transform:uppercase;
-        color:#0f172a;
-      ">
-        earth<span style="color:#2563eb;">monitor</span>
-      </div>
-      <div style="font-size:13px;color:#64748b;margin-top:4px;">
-        Dynamic World Land Cover Explorer
-      </div>
-    </div>
-    """,
-    unsafe_allow_html=True,
-)
+# ========== LEFT COLUMN: sidebar ==========
+left_col, right_col = st.columns([0.26, 0.74], gap="medium")
 
-left_col, right_col = st.columns([0.32, 0.68], gap="large")
-
-# ---------- LEFT: controls + chat ----------
 with left_col:
-    st.markdown("<div class='panel-card'>", unsafe_allow_html=True)
+    st.markdown("<div class='sidebar-card'>", unsafe_allow_html=True)
 
-    # Analysis settings card
+    # Brand + "Data layers" header (visual only – settings are here)
     st.markdown(
-        "<div style='background:#f8fafc;border-radius:14px;"
-        "border:1px solid #e2e8f0;padding:12px 14px 12px;margin-bottom:12px;'>",
+        """
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <div class="brand-logo">earth<span>monitor</span></div>
+          <div class="sidebar-title">Analysis controls</div>
+        </div>
+        """,
         unsafe_allow_html=True,
     )
 
-    header_col, pill_col = st.columns([0.6, 0.4])
-    with header_col:
-        st.markdown(
-            "<span style='font-weight:600;color:#111827;font-size:12px;'>"
-            "Analysis settings</span>",
-            unsafe_allow_html=True,
-        )
-    with pill_col:
-        st.markdown(
-            "<div class='step-badge' style='background:#eef2ff;color:#4f46e5;text-align:right;'>"
-            "Step 1 · Configure</div>",
-            unsafe_allow_html=True,
-        )
+    # Analysis settings section
+    st.markdown("<div class='sidebar-section'>", unsafe_allow_html=True)
+    st.markdown(
+        "<div class='sidebar-heading'>Mode &amp; Years</div>",
+        unsafe_allow_html=True,
+    )
+    st.markdown(
+        "<div style='font-size:10px;color:#9ca3af;margin-bottom:4px;'>"
+        "Choose the analysis function and years. The map on the right updates automatically."
+        "</div>",
+        unsafe_allow_html=True,
+    )
 
     func_options = ["change_detection", "single_year", "timeseries"]
     func_labels = {
@@ -344,15 +514,16 @@ with left_col:
         index=func_index,
         format_func=lambda v: func_labels[v],
         horizontal=False,
+        label_visibility="collapsed",
     )
     st.session_state["analysis_function"] = selected_func
 
     if selected_func == "single_year":
+        idx = YEARS.index(st.session_state["year_a"])
         st.markdown(
-            "<label style='font-size:11px;color:#6b7280;margin-top:2px;'>Year</label>",
+            "<div style='font-size:10px;color:#9ca3af;margin-top:2px;'>Year</div>",
             unsafe_allow_html=True,
         )
-        idx = YEARS.index(st.session_state["year_a"])
         year_single = st.selectbox(
             label="",
             options=YEARS,
@@ -365,12 +536,10 @@ with left_col:
         col_year_a, col_year_b = st.columns(2)
         with col_year_a:
             label = (
-                "Start year (A)"
-                if selected_func == "timeseries"
-                else "Year A (Before)"
+                "Start (A)" if selected_func == "timeseries" else "Year A (Before)"
             )
             st.markdown(
-                f"<label style='font-size:11px;color:#6b7280;'>{label}</label>",
+                f"<div style='font-size:10px;color:#9ca3af;'>{label}</div>",
                 unsafe_allow_html=True,
             )
             idx_a = YEARS.index(st.session_state["year_a"])
@@ -384,12 +553,10 @@ with left_col:
 
         with col_year_b:
             label = (
-                "End year (B)"
-                if selected_func == "timeseries"
-                else "Year B (After)"
+                "End (B)" if selected_func == "timeseries" else "Year B (After)"
             )
             st.markdown(
-                f"<label style='font-size:11px;color:#6b7280;'>{label}</label>",
+                f"<div style='font-size:10px;color:#9ca3af;'>{label}</div>",
                 unsafe_allow_html=True,
             )
             idx_b = YEARS.index(st.session_state["year_b"])
@@ -402,29 +569,25 @@ with left_col:
             st.session_state["year_b"] = year_b
 
     st.markdown(
-        "<p style='font-size:11px;color:#6b7280;margin-top:4px;margin-bottom:4px;'>"
-        "Location is fixed to the study area. Change years here, or ask the chatbot "
-        "and the map will update automatically."
-        "</p>",
+        "<div style='font-size:10px;color:#6b7280;margin-top:4px;'>"
+        "Location is fixed to the study area. Use the chatbot below or these controls."
+        "</div>",
         unsafe_allow_html=True,
     )
-
     st.markdown("</div>", unsafe_allow_html=True)
 
-    st.markdown("<div style='height:8px;'></div>", unsafe_allow_html=True)
+    # Spacer
+    st.markdown("<div style='flex:0 0 6px;'></div>", unsafe_allow_html=True)
 
     # Chatbox
+    st.markdown("<div class='chat-box'>", unsafe_allow_html=True)
+    st.markdown("<div class='chat-header'>Assistant</div>", unsafe_allow_html=True)
     st.markdown(
-        "<div class='chat-box'>"
-        "<div style='font-size:12px;font-weight:600;color:#111827;margin-bottom:2px;'>"
-        "Chatbot</div>"
-        "<div style='font-size:10px;color:#64748b;margin-bottom:6px;'>"
-        "Ask for different years or analyses and the map updates.</div>",
+        "<div class='chat-sub'>Ask for different years or modes and I’ll explain what the map shows.</div>",
         unsafe_allow_html=True,
     )
 
     st.markdown("<div class='chat-messages'>", unsafe_allow_html=True)
-
     for msg in st.session_state["chat_history"]:
         if msg["role"] == "user":
             align = "flex-end"
@@ -437,9 +600,9 @@ with left_col:
 
         st.markdown(
             f"""
-            <div style="display:flex;justify-content:{align};margin-bottom:6px;">
+            <div style="display:flex;justify-content:{align};margin-bottom:5px;">
               <div>
-                <div style="font-size:10px;color:#6b7280;margin-bottom:2px;
+                <div style="font-size:9px;color:#6b7280;margin-bottom:2px;
                             text-align:{'right' if msg['role']=='user' else 'left'};">
                     {name}
                 </div>
@@ -451,98 +614,129 @@ with left_col:
             """,
             unsafe_allow_html=True,
         )
-
     st.markdown("</div>", unsafe_allow_html=True)
 
     with st.form("chat_form", clear_on_submit=True):
         user_text = st.text_input(
             label="",
-            placeholder="Ask about years, change, or time series…",
+            placeholder="e.g. change between 2020 and 2024",
         )
         run_clicked = st.form_submit_button("▶ Run")
 
-    st.markdown("</div>", unsafe_allow_html=True)
+    st.markdown("</div>", unsafe_allow_html=True)  # end chat-box
+    st.markdown("</div>", unsafe_allow_html=True)  # end sidebar-card
 
-    if run_clicked:
-        if user_text.strip():
-            user_msg = user_text.strip()
-        else:
-            af = st.session_state["analysis_function"]
-            ya = st.session_state["year_a"]
-            yb = st.session_state["year_b"]
-            user_msg = f"Run {af} for {LOCATION_NAME} ({ya} → {yb})."
+# Handle chat submit AFTER layout so map reacts
+if "run_clicked_processed" not in st.session_state:
+    st.session_state["run_clicked_processed"] = False
 
-        st.session_state["chat_history"].append(
-            {"role": "user", "content": user_msg}
-        )
-
-        update_controls_from_text(user_msg)
-
+if run_clicked:
+    if user_text.strip():
+        user_msg = user_text.strip()
+    else:
         af = st.session_state["analysis_function"]
         ya = st.session_state["year_a"]
         yb = st.session_state["year_b"]
+        user_msg = f"Run {af} for {LOCATION_NAME} ({ya} → {yb})."
 
-        messages_for_api = [
-            {
-                "role": "system",
-                "content": (
-                    "You are a helpful assistant inside an app called earthmonitor. "
-                    "The app has a fixed study area and three analysis modes: "
-                    "change_detection (compare two years), single_year (one year), "
-                    "and timeseries (start year to end year). "
-                    f"The current mode is {af}, with years {ya} and {yb}. "
-                    "Explain what the map likely shows and any important patterns, "
-                    "in simple language."
-                ),
-            }
-        ]
-        messages_for_api.extend(st.session_state["chat_history"])
-
-        with st.spinner("Thinking..."):
-            reply = ask_chatbot(messages_for_api)
-
-        st.session_state["chat_history"].append(
-            {"role": "assistant", "content": reply}
-        )
-
-    st.markdown("</div>", unsafe_allow_html=True)
-
-
-# ---------- RIGHT: map panel ----------
-with right_col:
-    st.markdown("<div class='panel-card'>", unsafe_allow_html=True)
+    st.session_state["chat_history"].append({"role": "user", "content": user_msg})
+    update_controls_from_text(user_msg)
 
     af = st.session_state["analysis_function"]
     ya = st.session_state["year_a"]
     yb = st.session_state["year_b"]
 
-    head_left, head_right = st.columns([0.6, 0.4])
-    with head_left:
+    messages_for_api = [
+        {
+            "role": "system",
+            "content": (
+                "You are a helpful assistant inside an app called earthmonitor. "
+                "The app has a fixed study area and three analysis modes: "
+                "change_detection (compare two years), single_year (one year), "
+                "and timeseries (start year to end year). "
+                f"The current mode is {af}, with years {ya} and {yb}. "
+                "Explain what the map likely shows and any important patterns, "
+                "in simple language."
+            ),
+        }
+    ]
+    messages_for_api.extend(st.session_state["chat_history"])
+
+    with st.spinner("Thinking..."):
+        reply = ask_chatbot(messages_for_api)
+
+    st.session_state["chat_history"].append(
+        {"role": "assistant", "content": reply}
+    )
+
+# ========== RIGHT COLUMN: main content (header + map + metrics) ==========
+with right_col:
+    st.markdown("<div class='main-column'>", unsafe_allow_html=True)
+
+    # Header row similar to screenshot
+    st.markdown(
+        """
+        <div class="main-header">
+          <div class="back-link">
+            <div class="back-pill">←</div>
+            <span>Back to Dashboard</span>
+          </div>
+          <div class="title-block">
+            <div class="title-main">Change Detection Analysis</div>
+            <div class="title-sub">Compare environmental changes over time</div>
+          </div>
+          <div style="width:90px;"></div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    # Map card
+    st.markdown("<div class='map-card'>", unsafe_allow_html=True)
+
+    af = st.session_state["analysis_function"]
+    ya = st.session_state["year_a"]
+    yb = st.session_state["year_b"]
+
+    # Top mini-header inside card (Before / After / dates)
+    if af == "change_detection":
         st.markdown(
-            "<div style='font-size:11px;background:#eef2ff;color:#4f46e5;"
-            "display:inline-block;padding:2px 8px;border-radius:999px;"
-            "font-weight:600;margin-bottom:4px;'>Step 2 · View map</div>",
+            f"""
+            <div class="map-header-row">
+              <div>
+                <div class="map-label">Before</div>
+                <div class="map-date">Jan 1, {ya}</div>
+              </div>
+              <div style="text-align:center;">
+                <span class="map-chip chip-before">A</span>
+                <span style="margin:0 6px;color:#6b7280;">→</span>
+                <span class="map-chip chip-after">B</span>
+              </div>
+              <div style="text-align:right;">
+                <div class="map-label">After</div>
+                <div class="map-date">Dec 31, {yb}</div>
+              </div>
+            </div>
+            """,
             unsafe_allow_html=True,
         )
+    else:
+        label_mid = "Single Year Map" if af == "single_year" else "Time Series"
         st.markdown(
-            "<div style='font-size:15px;font-weight:600;color:#111827;"
-            "margin-bottom:2px;'>Interactive map</div>",
-            unsafe_allow_html=True,
-        )
-        st.markdown(
-            f"<div style='font-size:12px;color:#6b7280;'>{LOCATION_NAME} · "
-            f"{af} · {ya}–{yb}</div>",
-            unsafe_allow_html=True,
-        )
-    with head_right:
-        st.markdown(
-            "<div style='font-size:11px;color:#6b7280;text-align:right;'>"
-            "Change detection: split view (left = before, right = after).<br>"
-            "Other modes: use the layer control to toggle layers."
-            "</div>",
+            f"""
+            <div class="map-header-row">
+              <div></div>
+              <div style="text-align:center;">
+                <div class="map-label">{label_mid}</div>
+                <div class="map-date">{ya} – {yb}</div>
+              </div>
+              <div></div>
+            </div>
+            """,
             unsafe_allow_html=True,
         )
 
+    # Build map (logic unchanged)
     with st.spinner("Loading Dynamic World layers from Earth Engine..."):
         if af == "single_year":
             tile_urls = get_dw_tile_urls(location_point, ya, ya)
@@ -684,6 +878,59 @@ with right_col:
 
     st_folium(m, height=430, use_container_width=True)
 
-    st.markdown("</div>", unsafe_allow_html=True)
+    # Simple metric cards under the map (visual only, based on current selection)
+    if af == "change_detection":
+        mode_label = "Change detection"
+        summary = f"{ya} → {yb}"
+    elif af == "single_year":
+        mode_label = "Single year"
+        summary = f"{ya}"
+    else:
+        mode_label = "Time series"
+        summary = f"{ya} – {yb}"
 
-st.markdown("</div>", unsafe_allow_html=True)
+    st.markdown(
+        """
+        <div style="font-size:11px;color:#9ca3af;margin-top:8px;margin-bottom:4px;">
+          Change Analysis
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    st.markdown("<div class='metrics-row'>", unsafe_allow_html=True)
+    st.markdown(
+        f"""
+        <div class="metric-card">
+          <div class="metric-label">Mode</div>
+          <div class="metric-value">{mode_label}</div>
+          <div class="metric-sub">Driven by controls &amp; chatbot</div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+    st.markdown(
+        f"""
+        <div class="metric-card">
+          <div class="metric-label">Selected years</div>
+          <div class="metric-value">{summary}</div>
+          <div class="metric-sub">Earth Engine Dynamic World</div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+    st.markdown(
+        f"""
+        <div class="metric-card">
+          <div class="metric-label">Study area</div>
+          <div class="metric-value">{LOCATION_NAME}</div>
+          <div class="metric-sub">Location fixed in this demo</div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+    st.markdown("</div>", unsafe_allow_html=True)  # metrics-row
+    st.markdown("</div>", unsafe_allow_html=True)  # map-card
+    st.markdown("</div>", unsafe_allow_html=True)  # main-column
+
+st.markdown("</div>", unsafe_allow_html=True)  # app-shell
