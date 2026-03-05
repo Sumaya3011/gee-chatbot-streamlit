@@ -153,22 +153,6 @@ st.markdown(
         transform: translateY(-0.5px);
     }
 
-    /* Smaller pale button (for New chat) */
-    .secondary-btn > button {
-        background: rgba(15, 23, 42, 0.9) !important;
-        border-radius: 999px !important;
-        border: 1px solid #1f2937 !important;
-        box-shadow: none !important;
-        font-size: 11px !important;
-        padding: 0.2rem 0.8rem !important;
-        color: #9ca3af !important;
-    }
-
-    .secondary-btn > button:hover {
-        border-color: #4b5563 !important;
-        color: #e5e7eb !important;
-    }
-
     /* Chat container */
     .chat-container {
         border-radius: 14px;
@@ -302,7 +286,7 @@ if "year_a" not in st.session_state:
 if "year_b" not in st.session_state:
     st.session_state["year_b"] = YEARS[max(0, len(YEARS) - 1)]
 
-# Chat history: new session = fresh chat
+# Chat history: new browser session = fresh chat
 if "chat_history" not in st.session_state:
     st.session_state["chat_history"] = get_initial_chat_history()
 
@@ -638,27 +622,19 @@ with left_col:
 
     st.markdown("---")
 
-    # Chatbot title + reset button
-    c1, c2 = st.columns([0.6, 0.4])
-    with c1:
-        st.markdown(
-            "<div class='sidebar-section-title' style='margin-bottom:2px;'>Chatbot</div>",
-            unsafe_allow_html=True,
-        )
-        st.markdown(
-            "<div class='sidebar-subtext'>Ask about changes or tweak settings via text.</div>",
-            unsafe_allow_html=True,
-        )
-    with c2:
-        with st.container():
-            st.markdown("<div style='text-align:right;'>", unsafe_allow_html=True)
-            reset_chat_clicked = st.button(
-                "↻ New chat", key="reset_chat_btn", help="Clear chat history"
-            )
-            st.markdown("</div>", unsafe_allow_html=True)
-
-    if reset_chat_clicked:
-        st.session_state["chat_history"] = get_initial_chat_history()
+    # Chatbot (no reset button, just automatic on new session)
+    st.markdown(
+        "<div class='sidebar-section-title' style='margin-bottom:2px;'>Chatbot</div>",
+        unsafe_allow_html=True,
+    )
+    st.markdown(
+        "<div class='sidebar-subtext'>Ask about changes or tweak settings via text.</div>",
+        unsafe_allow_html=True,
+    )
+    st.markdown(
+        "<div class='field-caption'>Chat starts fresh every time you open a new session.</div>",
+        unsafe_allow_html=True,
+    )
 
     # Chat history
     st.markdown("<div class='chat-container'>", unsafe_allow_html=True)
