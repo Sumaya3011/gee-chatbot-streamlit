@@ -177,14 +177,8 @@ st.markdown(
         margin-bottom: 1px;
     }
 
-    .chat-input-row {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        margin-top: 2px;
-    }
-
-    .chat-input-row .stTextInput>div>input {
+    /* Make input + button match and stay INSIDE chat-box */
+    .chat-box .stTextInput>div>input {
         border-radius: 999px;
         padding: 0.25rem 0.6rem;
         background: #020617;
@@ -193,13 +187,25 @@ st.markdown(
         font-size: 11px;
     }
 
-    .chat-input-row .stButton>button {
+    .chat-box .stButton>button {
+        border-radius: 999px;
         padding: 0.25rem 0.7rem;
         font-size: 11px;
+        font-weight: 500;
+        background: linear-gradient(135deg, #22c55e, #16a34a);
+        border: none;
+        color: #f9fafb;
         box-shadow: 0 8px 20px rgba(22, 163, 74, 0.55);
     }
 
-    /* Buttons & other inputs */
+    .chat-input-row {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin-top: 2px;
+    }
+
+    /* Global buttons & inputs (outside chat) */
     .stButton > button {
         border-radius: 999px;
         padding: 0.35rem 0.9rem;
@@ -614,7 +620,7 @@ with left_col:
     )
     st.markdown("</div>", unsafe_allow_html=True)
 
-    # Chat – compact card
+    # Chat – one compact box (messages + input inside)
     st.markdown("<div class='chat-box'>", unsafe_allow_html=True)
 
     st.markdown(
@@ -659,28 +665,25 @@ with left_col:
         )
     st.markdown("</div>", unsafe_allow_html=True)  # close chat-messages
 
-    # Input + button on one row
-    with st.form("chat_form", clear_on_submit=True):
-        col_input, col_btn = st.columns([4, 1])
-        with col_input:
-            user_text = st.text_input(
-                label="",
-                placeholder="e.g. change 2020 to 2024",
-                key="chat_input",
-            )
-        with col_btn:
-            run_clicked = st.form_submit_button("▶")
+    # Input + button INSIDE the same chat-box
+    col_input, col_btn = st.columns([4, 1])
+    with col_input:
+        user_text = st.text_input(
+            label="",
+            placeholder="e.g. change 2020 to 2024",
+            key="chat_input",
+        )
+    with col_btn:
+        run_clicked = st.button("▶", key="chat_run")
 
     st.markdown("</div>", unsafe_allow_html=True)  # close chat-box
     st.markdown("</div>", unsafe_allow_html=True)  # sidebar-card
 
 # Handle chat after sidebar so map reacts
-if "run_clicked" not in st.session_state:
-    st.session_state["run_clicked"] = False
-
 if run_clicked:
-    if user_text.strip():
-        user_msg = user_text.strip()
+    text = user_text.strip()
+    if text:
+        user_msg = text
     else:
         af = st.session_state["analysis_function"]
         ya = st.session_state["year_a"]
@@ -716,6 +719,8 @@ if run_clicked:
     st.session_state["chat_history"].append(
         {"role": "assistant", "content": reply}
     )
+    # clear input for next question
+    st.session_state["chat_input"] = ""
 
 # ========== RIGHT COLUMN: MAIN AREA ==========
 with right_col:
@@ -783,7 +788,7 @@ with right_col:
             unsafe_allow_html=True,
         )
 
-    # Map logic unchanged
+    # Map logic (unchanged)
     with st.spinner("Loading Dynamic World layers from Earth Engine..."):
         if af == "single_year":
             tile_urls = get_dw_tile_urls(location_point, ya, ya)
