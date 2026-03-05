@@ -1,15 +1,12 @@
 # app.py
 import json
 import re
-import os
-from pathlib import Path
 
 import streamlit as st
 import ee
 import folium
 from folium.plugins import DualMap
 from streamlit_folium import st_folium
-from openai import OpenAI
 
 from config import (
     YEARS,
@@ -20,14 +17,14 @@ from config import (
     CLASS_PALETTE,
 )
 from gee_utils import get_dw_tile_urls
-from chat_utils import ask_chatbot  # simple map-explainer chat
+from chat_utils import ask_chatbot
 
 
 # -------------------------
-# 1. PAGE CONFIG & CUSTOM CSS
+# 1. PAGE CONFIG & GLOBAL CSS
 # -------------------------
 st.set_page_config(
-    page_title="GEE Chatbot – Dynamic World Explorer",
+    page_title="earthmonitor – Dynamic World Explorer",
     page_icon="🌍",
     layout="wide",
 )
@@ -35,71 +32,347 @@ st.set_page_config(
 st.markdown(
     """
     <style>
-    .stApp {
-        background: radial-gradient(circle at top left, #e0f2fe, #f9fafb);
+    html, body, .stApp {
+        height: 100vh;
+        overflow: hidden;  /* keep one fixed page */
+        background: radial-gradient(circle at top left, #020617, #020617 40%, #020617);
         font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
     }
 
     .block-container {
-        padding-top: 0.8rem;
-        padding-bottom: 0.8rem;
-        max-width: 1300px;
+        padding-top: 0.4rem;
+        padding-bottom: 0.4rem;
+        padding-left: 1.0rem;
+        padding-right: 1.0rem;
+        max-width: 1400px;
+        height: 100vh;  /* full viewport */
     }
 
-    .panel-card {
-        background: #ffffff;
+    .app-shell {
+        display: flex;
+        flex-direction: row;
+        height: 100%;   /* fill container */
+        gap: 0.8rem;
+        color: #e5e7eb;
+    }
+
+    /* SIDEBAR (LEFT) */
+    .sidebar-card {
+        background: radial-gradient(circle at top left, #020617, #020617);
         border-radius: 18px;
-        box-shadow: 0 18px 40px rgba(15, 23, 42, 0.16);
-        padding: 18px 18px 14px;
+        border: 1px solid rgba(148, 163, 184, 0.35);
+        box-shadow: 0 18px 40px rgba(15, 23, 42, 0.6);
+        padding: 14px 14px 10px;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
     }
 
-    .stButton > button {
-        border-radius: 999px;
-        padding: 0.45rem 0.9rem;
-        font-size: 13px;
-        font-weight: 500;
-        background: linear-gradient(135deg, #2563eb, #4f46e5);
-        border: none;
-        box-shadow: 0 8px 18px rgba(37, 99, 235, 0.35);
-    }
-
-    .stButton > button:hover {
-        box-shadow: 0 12px 24px rgba(37, 99, 235, 0.45);
-    }
-
-    /* Chat box look */
-    .chat-container {
+    .sidebar-section {
+        background: linear-gradient(145deg, rgba(15,23,42,0.95), rgba(15,23,42,0.9));
         border-radius: 14px;
-        background: #f9fafb;
-        border: 1px solid #e5e7eb;
-        padding: 10px;
-        height: 260px;
+        padding: 10px 11px;
+        border: 1px solid rgba(51, 65, 85, 0.9);
+    }
+
+    .sidebar-title {
+        font-size: 11px;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: #9ca3af;
+        font-weight: 600;
+        margin-bottom: 4px;
+    }
+
+    .sidebar-heading {
+        font-size: 13px;
+        font-weight: 600;
+        color: #e5e7eb;
+        margin-bottom: 2px;
+    }
+
+    .brand-logo {
+        font-size: 15px;
+        font-weight: 700;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: #f9fafb;
+    }
+
+    .brand-logo span {
+        color: #22c55e;
+    }
+
+    /* Chat box – compact professional style */
+    .chat-box {
+        border-radius: 14px;
+        background: radial-gradient(circle at top, #020617, #020617 40%, #020617);
+        border: 1px solid rgba(51, 65, 85, 0.95);
+        padding: 8px 9px 7px;
+        height: 190px;  /* compact */
+        display: flex;
+        flex-direction: column;
+    }
+
+    .chat-header-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 4px;
+    }
+
+    .chat-header-title {
+        font-size: 11px;
+        font-weight: 600;
+        color: #e5e7eb;
+    }
+
+    .chat-header-badge {
+        font-size: 10px;
+        padding: 2px 9px;
+        border-radius: 999px;
+        border: 1px solid rgba(55,65,81,0.95);
+        color: #9ca3af;
+    }
+
+    .chat-sub {
+        font-size: 9px;
+        color: #9ca3af;
+        margin-bottom: 5px;
+    }
+
+    .chat-messages {
+        flex: 1;
         overflow-y: auto;
+        margin-bottom: 5px;
+        padding-right: 2px;
+        scrollbar-width: thin;
+    }
+
+    .chat-bubble-user,
+    .chat-bubble-assistant {
+        max-width: 90%;
+        padding: 6px 8px;
+        border-radius: 10px;
+        font-size: 11px;
+        line-height: 1.35;
+        white-space: pre-wrap;
     }
 
     .chat-bubble-user {
-        max-width: 90%;
-        padding: 8px 10px;
-        border-radius: 12px;
-        background: #2563eb;
-        color: #ffffff;
-        font-size: 13px;
-        line-height: 1.4;
-        white-space: pre-wrap;
+        background: linear-gradient(135deg, #22c55e, #16a34a);
+        color: #f9fafb;
     }
 
     .chat-bubble-assistant {
-        max-width: 90%;
-        padding: 8px 10px;
-        border-radius: 12px;
-        background: #f3f4f6;
-        color: #111827;
-        font-size: 13px;
-        line-height: 1.4;
-        white-space: pre-wrap;
+        background: rgba(15, 23, 42, 0.96);
+        border: 1px solid rgba(55, 65, 81, 0.95);
+        color: #e5e7eb;
     }
 
-    /* Hide "View fullscreen" icon to keep the map clean */
+    .chat-name {
+        font-size: 9px;
+        color: #6b7280;
+        margin-bottom: 1px;
+    }
+
+    /* Make input + button match and stay INSIDE chat-box */
+    .chat-box .stTextInput>div>input {
+        border-radius: 999px;
+        padding: 0.25rem 0.6rem;
+        background: #020617;
+        border: 1px solid #1e293b;
+        color: #e5e7eb;
+        font-size: 11px;
+    }
+
+    .chat-box .stButton>button {
+        border-radius: 999px;
+        padding: 0.25rem 0.7rem;
+        font-size: 11px;
+        font-weight: 500;
+        background: linear-gradient(135deg, #22c55e, #16a34a);
+        border: none;
+        color: #f9fafb;
+        box-shadow: 0 8px 20px rgba(22, 163, 74, 0.55);
+    }
+
+    .chat-input-row {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin-top: 2px;
+    }
+
+    /* Global buttons & inputs (outside chat) */
+    .stButton > button {
+        border-radius: 999px;
+        padding: 0.35rem 0.9rem;
+        font-size: 12px;
+        font-weight: 500;
+        background: linear-gradient(135deg, #22c55e, #16a34a);
+        border: none;
+        color: #f9fafb;
+    }
+    .stButton > button:hover {
+        box-shadow: 0 18px 40px rgba(22, 163, 74, 0.75);
+    }
+
+    .stRadio > div {
+        gap: 0.4rem;
+    }
+    .stSelectbox > div > div {
+        min-height: 2.1rem;
+    }
+    .stTextInput > div > input {
+        border-radius: 999px;
+        padding: 0.5rem 0.75rem;
+        background: #020617;
+        border: 1px solid #1e293b;
+        color: #e5e7eb;
+        font-size: 12px;
+    }
+
+    /* MAIN (RIGHT) */
+    .main-column {
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        gap: 0.4rem;
+    }
+
+    .main-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 4px 4px 2px;
+    }
+
+    .back-link {
+        font-size: 11px;
+        color: #9ca3af;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        cursor: default;
+    }
+
+    .back-pill {
+        width: 22px;
+        height: 22px;
+        border-radius: 999px;
+        border: 1px solid rgba(51,65,85,0.9);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+        color: #e5e7eb;
+        background: rgba(15,23,42,0.9);
+    }
+
+    .title-block {
+        text-align: center;
+        flex: 1;
+    }
+
+    .title-main {
+        font-size: 15px;
+        font-weight: 600;
+        color: #f9fafb;
+    }
+
+    .title-sub {
+        font-size: 11px;
+        color: #9ca3af;
+    }
+
+    .map-card {
+        background: radial-gradient(circle at top, #020617, #020617 40%, #020617);
+        border-radius: 20px;
+        border: 1px solid rgba(30, 64, 175, 0.6);
+        box-shadow: 0 22px 50px rgba(15, 23, 42, 0.9);
+        padding: 10px 12px 8px;
+        flex: 1;                     /* take remaining height */
+        display: flex;
+        flex-direction: column;
+    }
+
+    .map-header-row {
+        display: grid;
+        grid-template-columns: 1.3fr 1fr 1.3fr;
+        align-items: center;
+        margin-bottom: 6px;
+        font-size: 11px;
+        color: #9ca3af;
+    }
+
+    .map-label {
+        font-size: 12px;
+        font-weight: 600;
+        color: #f9fafb;
+    }
+
+    .map-chip {
+        display: inline-flex;
+        align-items: center;
+        padding: 2px 10px;
+        border-radius: 999px;
+        font-size: 11px;
+        font-weight: 600;
+    }
+
+    .chip-before {
+        background: rgba(2, 6, 23, 0.85);
+        border: 1px solid rgba(59, 130, 246, 0.9);
+        color: #bfdbfe;
+    }
+
+    .chip-after {
+        background: rgba(2, 6, 23, 0.85);
+        border: 1px solid rgba(22, 163, 74, 0.9);
+        color: #bbf7d0;
+        justify-self: end;
+    }
+
+    .map-date {
+        font-size: 11px;
+        color: #9ca3af;
+    }
+
+    .metrics-row {
+        display: grid;
+        grid-template-columns: 1.1fr 0.9fr 1.1fr;
+        gap: 8px;
+        margin-top: 6px;
+    }
+
+    .metric-card {
+        background: rgba(15,23,42,0.98);
+        border-radius: 14px;
+        padding: 7px 9px;
+        border: 1px solid rgba(30, 64, 175, 0.6);
+        font-size: 11px;
+    }
+
+    .metric-label {
+        font-size: 11px;
+        color: #9ca3af;
+        margin-bottom: 3px;
+    }
+
+    .metric-value {
+        font-size: 14px;
+        font-weight: 600;
+        color: #f9fafb;
+    }
+
+    .metric-sub {
+        font-size: 11px;
+        color: #9ca3af;
+        margin-top: 1px;
+    }
+
     button[title="View fullscreen"] {
         display: none;
     }
@@ -108,9 +381,8 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-
 # -------------------------
-# 2. INIT SESSION STATE
+# 2. SESSION STATE
 # -------------------------
 if "analysis_function" not in st.session_state:
     st.session_state["analysis_function"] = "change_detection"
@@ -126,29 +398,18 @@ if "chat_history" not in st.session_state:
         {
             "role": "assistant",
             "content": (
-                "Hi! I can help you explore Dynamic World land cover and "
-                "update the map when you ask for different years or analyses.\n\n"
-                "Chat modes:\n"
-                "- **Explain map**: simple explanation of what you see.\n"
-                "- **Change analysis report**: full report (Change Detection + Risk + Recommendations)."
+                "Hi, I'm the earthmonitor assistant.\n"
+                "Ask me to show change between two years, a single year, "
+                "or a time series (e.g., \"change 2020 to 2024\")."
             ),
         }
     ]
 
-# NEW: store the last change-analysis report text
-if "change_report_text" not in st.session_state:
-    st.session_state["change_report_text"] = None
-
-# NEW: chat mode (Explain vs Change Analysis)
-if "chat_mode" not in st.session_state:
-    st.session_state["chat_mode"] = "Explain map"
-
 
 # -------------------------
-# 3. INITIALIZE GOOGLE EARTH ENGINE
+# 3. INIT GOOGLE EARTH ENGINE
 # -------------------------
 def init_ee():
-    """Initialize Earth Engine using service account JSON from Streamlit secrets."""
     if getattr(st.session_state, "ee_initialized", False):
         return
 
@@ -184,18 +445,17 @@ location_point = ee.Geometry.Point([LOCATION_LON, LOCATION_LAT])
 
 
 # -------------------------
-# 4. HELPER: LEGEND BOX INSIDE MAP
+# 4. MAP LEGEND
 # -------------------------
 def add_dw_legend_to_map(m):
-    """Small legend box inside the Folium map (bottom-right)."""
     items_html = ""
     for label, color in zip(CLASS_LABELS, CLASS_PALETTE):
         items_html += (
             f"<div style='display:flex;align-items:center;margin-bottom:3px;'>"
             f"<span style='display:inline-block;width:12px;height:12px;"
-            f"border-radius:3px;border:1px solid #d1d5db;"
+            f"border-radius:3px;border:1px solid #0f172a;"
             f"background:#{color};margin-right:6px;'></span>"
-            f"<span style='font-size:11px;color:#374151;'>{label}</span>"
+            f"<span style='font-size:11px;color:#e5e7eb;'>{label}</span>"
             f"</div>"
         )
 
@@ -205,73 +465,34 @@ def add_dw_legend_to_map(m):
         bottom: 10px;
         right: 10px;
         z-index: 9999;
-        background-color: rgba(255, 255, 255, 0.95);
-        padding: 6px 8px;
-        border-radius: 10px;
-        border: 1px solid #e5e7eb;
-        box-shadow: 0 6px 14px rgba(15, 23, 42, 0.18);
+        background-color: rgba(15, 23, 42, 0.96);
+        padding: 7px 9px;
+        border-radius: 12px;
+        border: 1px solid rgba(51, 65, 85, 0.95);
+        box-shadow: 0 10px 26px rgba(15, 23, 42, 0.95);
     ">
-      <div style="font-size:11px;font-weight:600;color:#111827;margin-bottom:4px;">
+      <div style="font-size:11px;font-weight:600;color:#f9fafb;margin-bottom:4px;">
         Dynamic World
       </div>
       {items_html}
     </div>
     """
-
     m.get_root().html.add_child(folium.Element(legend_html))
 
 
 # -------------------------
-# 5. HELPER: CHAT → CONTROL MAP (years & function)
+# 5. CHAT → CONTROL MAP
 # -------------------------
 def update_controls_from_text(text: str):
-    """
-    Make the chat control the map settings (same as before):
+    t = text.lower()
 
-    - detect function: change_detection, single_year, timeseries
-    - detect explicit years (2020, 2024, ...)
-    - optional simple commands like "swap years", "reset map"
-    """
-    t = text.lower().strip()
-
-    # Reset
-    if "reset" in t and ("map" in t or "settings" in t or "all" in t):
-        st.session_state["analysis_function"] = "change_detection"
-        st.session_state["year_a"] = YEARS[max(0, len(YEARS) - 2)]
-        st.session_state["year_b"] = YEARS[max(0, len(YEARS) - 1)]
-        return
-
-    # Swap
-    if ("swap" in t or "switch" in t or "reverse" in t or "flip" in t) and "year" in t:
-        ya = st.session_state["year_a"]
-        yb = st.session_state["year_b"]
-        st.session_state["year_a"], st.session_state["year_b"] = yb, ya
-
-    # Next year (move end year forward)
-    if "next year" in t:
-        cur_b = st.session_state["year_b"]
-        if cur_b in YEARS:
-            idx = YEARS.index(cur_b)
-            if idx < len(YEARS) - 1:
-                st.session_state["year_b"] = YEARS[idx + 1]
-
-    # Previous year (move start year back)
-    if "previous year" in t or "last year" in t:
-        cur_a = st.session_state["year_a"]
-        if cur_a in YEARS:
-            idx = YEARS.index(cur_a)
-            if idx > 0:
-                st.session_state["year_a"] = YEARS[idx - 1]
-
-    # Function detection
-    if "change analysis" in t or "change detection" in t or "difference" in t:
+    if "change" in t or "difference" in t:
         st.session_state["analysis_function"] = "change_detection"
     elif "time series" in t or "timeseries" in t or "timeline" in t:
         st.session_state["analysis_function"] = "timeseries"
     elif "single year" in t or "only" in t:
         st.session_state["analysis_function"] = "single_year"
 
-    # Explicit years
     found = re.findall(r"\b(19[0-9]{2}|20[0-9]{2})\b", t)
     years_found = sorted({int(y) for y in found if int(y) in YEARS})
 
@@ -291,235 +512,38 @@ def update_controls_from_text(text: str):
 
 
 # -------------------------
-# 6. NEW: CHANGE ANALYSIS REPORT LOGIC (Phase 2 style)
+# 6. LAYOUT (SIDEBAR + MAIN)
 # -------------------------
+st.markdown("<div class='app-shell'>", unsafe_allow_html=True)
 
-# where we expect your Phase-1 JSON
-CHANGE_STATS_PATH = Path("outputs/change_stats.json")
+left_col, right_col = st.columns([0.26, 0.74], gap="medium")
 
-
-def load_change_stats_for_app() -> dict:
-    """
-    Load Phase-1 change_stats.json for this AOI.
-
-    Put your file in: outputs/change_stats.json (in your repo).
-    """
-    if not CHANGE_STATS_PATH.exists():
-        st.error(
-            "Change-stats file not found.\n\n"
-            "Please add your Phase 1 output as 'outputs/change_stats.json' "
-            "in the app repository."
-        )
-        st.stop()
-
-    with open(CHANGE_STATS_PATH, "r", encoding="utf-8") as f:
-        return json.load(f)
-
-
-def extract_core_facts_for_app(change_stats: dict) -> dict:
-    """
-    Small version of your notebook's extract_core_facts:
-    we use:
-      - before_date / after_date
-      - overall_change_percent
-      - water gain/loss
-      - vegetation loss
-      - top_transitions (top 3)
-    """
-    def _safe(d, k, default=None):
-        return d[k] if k in d else default
-
-    before_date = _safe(change_stats, "before_date", "unknown_start")
-    after_date = _safe(change_stats, "after_date", "unknown_end")
-
-    overall_change_percent = float(_safe(change_stats, "overall_change_percent", 0.0))
-    water_gain_percent = float(_safe(change_stats, "water_gain_percent", 0.0))
-    water_loss_percent = float(_safe(change_stats, "water_loss_percent", 0.0))
-    vegetation_loss_percent = float(_safe(change_stats, "vegetation_loss_percent", 0.0))
-
-    transitions = _safe(change_stats, "top_transitions", [])
-    transitions_sorted = sorted(
-        transitions, key=lambda x: float(x.get("percent", 0.0)), reverse=True
-    )
-    top3 = transitions_sorted[:3]
-
-    facts = {
-        "time_range": f"{before_date} → {after_date}",
-        "before_date": before_date,
-        "after_date": after_date,
-        "key_stats": {
-            "overall_change_percent": overall_change_percent,
-            "water_gain_percent": water_gain_percent,
-            "water_loss_percent": water_loss_percent,
-            "vegetation_loss_percent": vegetation_loss_percent,
-        },
-        "top_transitions": top3,
-        "study_area": LOCATION_NAME,
-    }
-    return facts
-
-
-def build_change_analysis_prompt(user_question: str, facts: dict) -> str:
-    """
-    Build a prompt similar to your Phase-2 notebook, but simpler:
-    we ask for markdown (no JSON schema) with:
-
-    A) Change Detection
-    B) Risk Analysis
-    C) Recommendations
-    and Suggested questions at the end.
-    """
-    facts_blob = json.dumps(facts, indent=2)
-
-    return f"""
-You are an expert climate-risk analyst for satellite-based change detection.
-Use ONLY the FACTS provided and the USER QUESTION to write a **short, clear report**
-for decision-makers.
-
-Study area: {facts.get("study_area", "Abu Dhabi AOI")}
-
-FACTS:
-{facts_blob}
-
-USER QUESTION:
-{user_question}
-
-Write your answer in **markdown** with this structure:
-
-### A) Change Detection
-- Briefly explain the method (Dynamic World, pixel-by-pixel comparison).
-- List key statistics from FACTS:
-  - overall_change_percent
-  - water_gain_percent
-  - water_loss_percent
-  - vegetation_loss_percent
-- Natural-language summary: what changed, where, and how much – use top_transitions
-  (e.g. trees → water, crops → built-up).
-
-### B) Risk Analysis (Heatwave)
-Explain using Hazard, Exposure, Vulnerability, Risk:
-1) Hazard – explain qualitatively how built-up and vegetation changes may affect heat.
-   Make it clear that temperature is NOT available: hazard is inferred.
-2) Exposure – explain which kind of areas are more exposed (for example areas with big transitions).
-3) Vulnerability – which land-cover classes are more vulnerable (built-up) vs less (water/vegetation).
-4) Risk Scoring – Use: Risk = Hazard × Exposure × Vulnerability.
-   Give a risk_level label: low / medium / high and a short justification using the numbers.
-
-### C) Recommendations (Decision Support)
-Start with one short intro paragraph:
-"Based on the detected land-cover transitions and associated risk analysis, it is recommended to:"
-
-Then give 3–5 bullet points of **practical, data-based** actions
-(e.g. limit dense urban expansion in high-risk zones, increase vegetation, continuous monitoring).
-
-Then three subsections:
-
-1) Avoidance Recommendations
-   - Actions to avoid very high-risk planning choices.
-
-2) Mitigation Recommendations
-   - Actions to reduce risk in existing or medium-risk areas.
-
-3) Monitoring Recommendations
-   - Actions for ongoing satellite monitoring and early warning.
-
-End with a section:
-
-### Suggested questions
-- 3–6 numbered follow-up questions that a user could ask next.
-
-Be concise, avoid long paragraphs, and make sure everything is consistent with the FACTS.
-""".strip()
-
-
-def get_openai_client() -> OpenAI:
-    """
-    Get OpenAI client from Streamlit secrets or environment.
-    DO NOT hardcode the key in the code.
-    """
-    api_key = st.secrets.get("OPENAI_API_KEY") or os.environ.get("OPENAI_API_KEY")
-    if not api_key:
-        st.error(
-            "OPENAI_API_KEY is not set.\n\n"
-            "In Streamlit Cloud, add it under Settings → Secrets as OPENAI_API_KEY."
-        )
-        st.stop()
-    return OpenAI(api_key=api_key)
-
-
-def run_change_analysis_report(user_question: str) -> str:
-    """
-    Full Phase-2 style pipeline for the app:
-
-    - load change_stats.json
-    - extract core facts
-    - build prompt
-    - call OpenAI
-    - return markdown report (string)
-    """
-    change_stats = load_change_stats_for_app()
-    facts = extract_core_facts_for_app(change_stats)
-    prompt = build_change_analysis_prompt(user_question, facts)
-
-    client = get_openai_client()
-    resp = client.chat.completions.create(
-        model="gpt-4o-mini",
-        messages=[{"role": "user", "content": prompt}],
-    )
-
-    report_text = resp.choices[0].message.content
-    return report_text
-
-
-# -------------------------
-# 7. LAYOUT: LEFT PANEL (controls + chat) & RIGHT PANEL (map + report)
-# -------------------------
-left_col, right_col = st.columns([0.32, 0.68], gap="large")
-
-# ---------- LEFT PANEL ----------
+# ========== LEFT COLUMN: SIDEBAR ==========
 with left_col:
-    st.markdown("<div class='panel-card'>", unsafe_allow_html=True)
-
-    # Title row
-    col_title, col_badge = st.columns([0.7, 0.3])
-    with col_title:
-        st.markdown("### GEE Chatbot")
-    with col_badge:
-        st.markdown(
-            "<span style='font-size:10px;padding:2px 6px;border-radius:999px;"
-            "background:#eff6ff;color:#1d4ed8;font-weight:600;"
-            "text-transform:uppercase;letter-spacing:0.04em;'>Beta</span>",
-            unsafe_allow_html=True,
-        )
+    st.markdown("<div class='sidebar-card'>", unsafe_allow_html=True)
 
     st.markdown(
-        "<p style='font-size:12px;color:#6b7280;margin-top:2px;'>"
-        "Explore Dynamic World land cover with AI, maps, and change-analysis reports."
-        "</p>",
+        """
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <div class="brand-logo">earth<span>monitor</span></div>
+          <div class="sidebar-title">Analysis controls</div>
+        </div>
+        """,
         unsafe_allow_html=True,
     )
 
-    # ---- Analysis settings (function first, then years) ----
+    # Analysis settings
+    st.markdown("<div class='sidebar-section'>", unsafe_allow_html=True)
     st.markdown(
-        "<div style='background:#f9fafb;border-radius:14px;"
-        "border:1px solid #e5e7eb;padding:10px 10px 8px;margin-bottom:10px;'>",
+        "<div class='sidebar-heading'>Mode &amp; Years</div>",
         unsafe_allow_html=True,
     )
-
-    header_col, pill_col = st.columns([0.6, 0.4])
-    with header_col:
-        st.markdown(
-            "<span style='font-weight:600;color:#111827;font-size:12px;'>"
-            "Analysis settings</span>",
-            unsafe_allow_html=True,
-        )
-    with pill_col:
-        st.markdown(
-            "<div style='font-size:10px;padding:2px 8px;border-radius:999px;"
-            "background:#eef2ff;color:#4f46e5;text-align:right;'>"
-            "Step 1 · Configure</div>",
-            unsafe_allow_html=True,
-        )
+    st.markdown(
+        "<div style='font-size:10px;color:#9ca3af;margin-bottom:4px;'>"
+        "Choose the analysis function and years. The map on the right updates automatically."
+        "</div>",
+        unsafe_allow_html=True,
+    )
 
     func_options = ["change_detection", "single_year", "timeseries"]
     func_labels = {
@@ -534,16 +558,16 @@ with left_col:
         index=func_index,
         format_func=lambda v: func_labels[v],
         horizontal=False,
+        label_visibility="collapsed",
     )
     st.session_state["analysis_function"] = selected_func
 
-    # Year controls depend on function
     if selected_func == "single_year":
+        idx = YEARS.index(st.session_state["year_a"])
         st.markdown(
-            "<label style='font-size:11px;color:#6b7280;margin-top:4px;'>Year</label>",
+            "<div style='font-size:10px;color:#9ca3af;margin-top:2px;'>Year</div>",
             unsafe_allow_html=True,
         )
-        idx = YEARS.index(st.session_state["year_a"])
         year_single = st.selectbox(
             label="",
             options=YEARS,
@@ -556,12 +580,10 @@ with left_col:
         col_year_a, col_year_b = st.columns(2)
         with col_year_a:
             label = (
-                "Start year (A)"
-                if selected_func == "timeseries"
-                else "Year A (Before)"
+                "Start (A)" if selected_func == "timeseries" else "Year A (Before)"
             )
             st.markdown(
-                f"<label style='font-size:11px;color:#6b7280;'>{label}</label>",
+                f"<div style='font-size:10px;color:#9ca3af;'>{label}</div>",
                 unsafe_allow_html=True,
             )
             idx_a = YEARS.index(st.session_state["year_a"])
@@ -575,12 +597,10 @@ with left_col:
 
         with col_year_b:
             label = (
-                "End year (B)"
-                if selected_func == "timeseries"
-                else "Year B (After)"
+                "End (B)" if selected_func == "timeseries" else "Year B (After)"
             )
             st.markdown(
-                f"<label style='font-size:11px;color:#6b7280;'>{label}</label>",
+                f"<div style='font-size:10px;color:#9ca3af;'>{label}</div>",
                 unsafe_allow_html=True,
             )
             idx_b = YEARS.index(st.session_state["year_b"])
@@ -593,41 +613,31 @@ with left_col:
             st.session_state["year_b"] = year_b
 
     st.markdown(
-        "<p style='font-size:11px;color:#6b7280;margin-top:6px;'>"
-        "Location is fixed to the study area. Change function and years, or ask the chatbot, "
-        "and the map + report will update."
-        "</p>",
+        "<div style='font-size:10px;color:#6b7280;margin-top:4px;'>"
+        "Location is fixed to the study area. Use the chatbot below or these controls."
+        "</div>",
         unsafe_allow_html=True,
     )
+    st.markdown("</div>", unsafe_allow_html=True)
 
-    st.markdown("</div>", unsafe_allow_html=True)  # end settings card
+    # Chat – one compact box (messages + input inside)
+    st.markdown("<div class='chat-box'>", unsafe_allow_html=True)
 
-    # ---- Chatbot mode ----
     st.markdown(
-        "<div style='font-size:12px;font-weight:600;color:#111827;margin-bottom:4px;'>"
-        "Chat mode</div>",
+        """
+        <div class="chat-header-row">
+          <div class="chat-header-title">Assistant</div>
+          <div class="chat-header-badge">earthmonitor</div>
+        </div>
+        """,
         unsafe_allow_html=True,
     )
-    mode_options = ["Explain map", "Change analysis report"]
-    mode_index = mode_options.index(st.session_state["chat_mode"])
-    chat_mode = st.radio(
-        "Chat mode",
-        options=mode_options,
-        index=mode_index,
-        horizontal=True,
-        label_visibility="collapsed",
-    )
-    st.session_state["chat_mode"] = chat_mode
-
-    # ---- Chatbot: fixed box with scroll ----
     st.markdown(
-        "<div style='font-size:12px;font-weight:600;color:#111827;margin-bottom:4px;'>"
-        "Chatbot</div>",
+        "<div class='chat-sub'>Ask for years or modes and I’ll explain what the map shows.</div>",
         unsafe_allow_html=True,
     )
 
-    st.markdown("<div class='chat-container'>", unsafe_allow_html=True)
-
+    st.markdown("<div class='chat-messages'>", unsafe_allow_html=True)
     for msg in st.session_state["chat_history"]:
         if msg["role"] == "user":
             align = "flex-end"
@@ -640,10 +650,9 @@ with left_col:
 
         st.markdown(
             f"""
-            <div style="display:flex;justify-content:{align};margin-bottom:6px;">
-              <div>
-                <div style="font-size:10px;color:#6b7280;margin-bottom:2px;
-                            text-align:{'right' if msg['role']=='user' else 'left'};">
+            <div style="display:flex;justify-content:{align};margin-bottom:4px;">
+              <div style="max-width:100%;">
+                <div class="chat-name" style="text-align:{'right' if msg['role']=='user' else 'left'};">
                     {name}
                 </div>
                 <div class="{bubble_class}">
@@ -654,267 +663,326 @@ with left_col:
             """,
             unsafe_allow_html=True,
         )
+    st.markdown("</div>", unsafe_allow_html=True)  # close chat-messages
 
-    st.markdown("</div>", unsafe_allow_html=True)  # end chat-container
-
-    # Chat input + Run button
-    with st.form("chat_form", clear_on_submit=True):
-        placeholder = (
-            "Ask about the map (Explain mode) or request a report "
-            "(e.g. 'Summarize changes and give risk + recommendations')."
-        )
+    # Input + button INSIDE the same chat-box
+    col_input, col_btn = st.columns([4, 1])
+    with col_input:
         user_text = st.text_input(
             label="",
-            placeholder=placeholder,
+            placeholder="e.g. change 2020 to 2024",
+            key="chat_input",
         )
-        run_clicked = st.form_submit_button("▶ Run")
+    with col_btn:
+        run_clicked = st.button("▶", key="chat_run")
 
-    if run_clicked:
-        # 1) user message
-        if user_text.strip():
-            user_msg = user_text.strip()
-        else:
-            af = st.session_state["analysis_function"]
-            ya = st.session_state["year_a"]
-            yb = st.session_state["year_b"]
-            user_msg = f"Run {af} for {LOCATION_NAME} ({ya} → {yb})."
+    st.markdown("</div>", unsafe_allow_html=True)  # close chat-box
+    st.markdown("</div>", unsafe_allow_html=True)  # sidebar-card
 
-        st.session_state["chat_history"].append(
-            {"role": "user", "content": user_msg}
-        )
-
-        # 2) update map controls from text
-        update_controls_from_text(user_msg)
-
-        # 3) choose behavior by chat mode
+# Handle chat after sidebar so map reacts
+if run_clicked:
+    text = user_text.strip()
+    if text:
+        user_msg = text
+    else:
         af = st.session_state["analysis_function"]
         ya = st.session_state["year_a"]
         yb = st.session_state["year_b"]
+        user_msg = f"Run {af} for {LOCATION_NAME} ({ya} → {yb})."
 
-        if st.session_state["chat_mode"] == "Explain map":
-            # simple explanation using existing chatbot
-            messages_for_api = [
-                {
-                    "role": "system",
-                    "content": (
-                        "You are a helpful assistant that explains Dynamic World land "
-                        "cover maps and changes over time in simple language. "
-                        "The location is fixed. The app has three analysis modes: "
-                        "change_detection (compare two years), single_year (one year), "
-                        "and timeseries (start year to end year). "
-                        f"The current mode is {af}, with years {ya} and {yb}. "
-                        "Describe what the map likely shows and any important patterns."
-                    ),
-                }
-            ]
-            messages_for_api.extend(st.session_state["chat_history"])
-
-            with st.spinner("Thinking..."):
-                reply = ask_chatbot(messages_for_api)
-
-            st.session_state["chat_history"].append(
-                {"role": "assistant", "content": reply}
-            )
-
-        else:
-            # Change analysis report mode (Phase-2 style)
-            with st.spinner("Building change-analysis report..."):
-                report_text = run_change_analysis_report(user_msg)
-
-            # Save report for the right-side panel
-            st.session_state["change_report_text"] = report_text
-
-            # Add a small confirmation bubble
-            st.session_state["chat_history"].append(
-                {
-                    "role": "assistant",
-                    "content": (
-                        "I generated a **Change Analysis report** based on your question "
-                        "and the Phase-1 statistics.\n\n"
-                        "You can view it in the **'Change analysis report' tab on the right**."
-                    ),
-                }
-            )
-
-    st.markdown("</div>", unsafe_allow_html=True)  # end left panel card
-
-
-# ---------- RIGHT PANEL (MAP + REPORT) ----------
-with right_col:
-    st.markdown("<div class='panel-card'>", unsafe_allow_html=True)
+    st.session_state["chat_history"].append({"role": "user", "content": user_msg})
+    update_controls_from_text(user_msg)
 
     af = st.session_state["analysis_function"]
     ya = st.session_state["year_a"]
     yb = st.session_state["year_b"]
 
+    messages_for_api = [
+        {
+            "role": "system",
+            "content": (
+                "You are a helpful assistant inside an app called earthmonitor. "
+                "The app has a fixed study area and three analysis modes: "
+                "change_detection (compare two years), single_year (one year), "
+                "and timeseries (start year to end year). "
+                f"The current mode is {af}, with years {ya} and {yb}. "
+                "Explain what the map likely shows and any important patterns, "
+                "in simple language."
+            ),
+        }
+    ]
+    messages_for_api.extend(st.session_state["chat_history"])
+
+    with st.spinner("Thinking..."):
+        reply = ask_chatbot(messages_for_api)
+
+    st.session_state["chat_history"].append(
+        {"role": "assistant", "content": reply}
+    )
+    # clear input for next question
+    st.session_state["chat_input"] = ""
+
+# ========== RIGHT COLUMN: MAIN AREA ==========
+with right_col:
+    st.markdown("<div class='main-column'>", unsafe_allow_html=True)
+
+    # Header
     st.markdown(
-        "<div style='font-size:16px;font-weight:600;color:#111827;"
-        "margin-bottom:4px;'>Analysis</div>",
+        """
+        <div class="main-header">
+          <div class="back-link">
+            <div class="back-pill">←</div>
+            <span>Back to Dashboard</span>
+          </div>
+          <div class="title-block">
+            <div class="title-main">Change Detection Analysis</div>
+            <div class="title-sub">Compare environmental changes over time</div>
+          </div>
+          <div style="width:90px;"></div>
+        </div>
+        """,
         unsafe_allow_html=True,
     )
 
-    st.markdown(
-        f"<div style='font-size:12px;color:#6b7280;margin-bottom:8px;'>"
-        f"{LOCATION_NAME} · {af} · {ya}–{yb}</div>",
-        unsafe_allow_html=True,
-    )
+    # Map card
+    st.markdown("<div class='map-card'>", unsafe_allow_html=True)
 
-    # Two tabs: Map + Change-analysis report
-    map_tab, report_tab = st.tabs(["🗺️ Map", "📊 Change analysis report"])
+    af = st.session_state["analysis_function"]
+    ya = st.session_state["year_a"]
+    yb = st.session_state["year_b"]
 
-    # ---- MAP TAB ----
-    with map_tab:
-        with st.spinner("Loading Dynamic World layers from Earth Engine..."):
-            if af == "single_year":
-                tile_urls = get_dw_tile_urls(location_point, ya, ya)
-            else:
-                tile_urls = get_dw_tile_urls(location_point, ya, yb)
+    if af == "change_detection":
+        st.markdown(
+            f"""
+            <div class="map-header-row">
+              <div>
+                <div class="map-label">Before</div>
+                <div class="map-date">Jan 1, {ya}</div>
+              </div>
+              <div style="text-align:center;">
+                <span class="map-chip chip-before">A</span>
+                <span style="margin:0 6px;color:#6b7280;">→</span>
+                <span class="map-chip chip-after">B</span>
+              </div>
+              <div style="text-align:right;">
+                <div class="map-label">After</div>
+                <div class="map-date">Dec 31, {yb}</div>
+              </div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+    else:
+        label_mid = "Single Year Map" if af == "single_year" else "Time Series"
+        st.markdown(
+            f"""
+            <div class="map-header-row">
+              <div></div>
+              <div style="text-align:center;">
+                <div class="map-label">{label_mid}</div>
+                <div class="map-date">{ya} – {yb}</div>
+              </div>
+              <div></div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
 
-            if af == "change_detection":
-                # DualMap split view
-                m = DualMap(
-                    location=[LOCATION_LAT, LOCATION_LON],
-                    zoom_start=11,
-                    tiles=None,
-                )
+    # Map logic (unchanged)
+    with st.spinner("Loading Dynamic World layers from Earth Engine..."):
+        if af == "single_year":
+            tile_urls = get_dw_tile_urls(location_point, ya, ya)
+        else:
+            tile_urls = get_dw_tile_urls(location_point, ya, yb)
 
-                # LEFT: Year A
-                folium.TileLayer(
-                    tiles=(
-                        "https://server.arcgisonline.com/ArcGIS/rest/services/"
-                        "World_Imagery/MapServer/tile/{z}/{y}/{x}"
-                    ),
-                    attr="Esri World Imagery",
-                    name="Satellite (A)",
-                    overlay=False,
+        if af == "change_detection":
+            m = DualMap(
+                location=[LOCATION_LAT, LOCATION_LON],
+                zoom_start=11,
+                tiles=None,
+            )
+
+            folium.TileLayer(
+                tiles=(
+                    "https://server.arcgisonline.com/ArcGIS/rest/services/"
+                    "World_Imagery/MapServer/tile/{z}/{y}/{x}"
+                ),
+                attr="Esri World Imagery",
+                name="Satellite (A)",
+                overlay=False,
+                control=True,
+            ).add_to(m.m1)
+
+            if tile_urls.get("a"):
+                folium.raster_layers.TileLayer(
+                    tiles=tile_urls["a"],
+                    attr="Google Earth Engine – Dynamic World",
+                    name=f"DW · Year A ({ya})",
+                    overlay=True,
                     control=True,
+                    opacity=0.9,
                 ).add_to(m.m1)
 
+            folium.TileLayer(
+                tiles=(
+                    "https://server.arcgisonline.com/ArcGIS/rest/services/"
+                    "World_Imagery/MapServer/tile/{z}/{y}/{x}"
+                ),
+                attr="Esri World Imagery",
+                name="Satellite (B)",
+                overlay=False,
+                control=True,
+            ).add_to(m.m2)
+
+            if tile_urls.get("b"):
+                folium.raster_layers.TileLayer(
+                    tiles=tile_urls["b"],
+                    attr="Google Earth Engine – Dynamic World",
+                    name=f"DW · Year B ({yb})",
+                    overlay=True,
+                    control=True,
+                    opacity=0.9,
+                ).add_to(m.m2)
+
+            if tile_urls.get("change"):
+                folium.raster_layers.TileLayer(
+                    tiles=tile_urls["change"],
+                    attr="Google Earth Engine – Dynamic World Change",
+                    name=f"DW · Change ({ya} → {yb})",
+                    overlay=True,
+                    control=True,
+                    opacity=0.7,
+                ).add_to(m.m1)
+                folium.raster_layers.TileLayer(
+                    tiles=tile_urls["change"],
+                    attr="Google Earth Engine – Dynamic World Change",
+                    name=f"DW · Change ({ya} → {yb})",
+                    overlay=True,
+                    control=True,
+                    opacity=0.7,
+                ).add_to(m.m2)
+
+            folium.LayerControl(collapsed=False).add_to(m.m1)
+            folium.LayerControl(collapsed=False).add_to(m.m2)
+
+            add_dw_legend_to_map(m)
+
+        else:
+            m = folium.Map(
+                location=[LOCATION_LAT, LOCATION_LON],
+                zoom_start=11,
+                tiles=None,
+                control_scale=True,
+            )
+
+            folium.TileLayer(
+                tiles=(
+                    "https://server.arcgisonline.com/ArcGIS/rest/services/"
+                    "World_Imagery/MapServer/tile/{z}/{y}/{x}"
+                ),
+                attr="Esri World Imagery",
+                name="Satellite",
+                overlay=False,
+                control=True,
+            ).add_to(m)
+
+            if af == "single_year":
                 if tile_urls.get("a"):
                     folium.raster_layers.TileLayer(
                         tiles=tile_urls["a"],
                         attr="Google Earth Engine – Dynamic World",
-                        name=f"DW · Year A ({ya})",
+                        name=f"DW · {ya}",
                         overlay=True,
                         control=True,
-                        opacity=0.9,
-                    ).add_to(m.m1)
-
-                # RIGHT: Year B
-                folium.TileLayer(
-                    tiles=(
-                        "https://server.arcgisonline.com/ArcGIS/rest/services/"
-                        "World_Imagery/MapServer/tile/{z}/{y}/{x}"
-                    ),
-                    attr="Esri World Imagery",
-                    name="Satellite (B)",
-                    overlay=False,
-                    control=True,
-                ).add_to(m.m2)
-
+                        opacity=0.85,
+                    ).add_to(m)
+            else:
+                if tile_urls.get("a"):
+                    folium.raster_layers.TileLayer(
+                        tiles=tile_urls["a"],
+                        attr="Google Earth Engine – Dynamic World",
+                        name=f"DW · Start ({ya})",
+                        overlay=True,
+                        control=True,
+                        opacity=0.8,
+                    ).add_to(m)
                 if tile_urls.get("b"):
                     folium.raster_layers.TileLayer(
                         tiles=tile_urls["b"],
                         attr="Google Earth Engine – Dynamic World",
-                        name=f"DW · Year B ({yb})",
+                        name=f"DW · End ({yb})",
                         overlay=True,
                         control=True,
-                        opacity=0.9,
-                    ).add_to(m.m2)
-
+                        opacity=0.8,
+                    ).add_to(m)
                 if tile_urls.get("change"):
-                    for map_obj in (m.m1, m.m2):
-                        folium.raster_layers.TileLayer(
-                            tiles=tile_urls["change"],
-                            attr="Google Earth Engine – Dynamic World Change",
-                            name=f"DW · Change ({ya} → {yb})",
-                            overlay=True,
-                            control=True,
-                            opacity=0.7,
-                        ).add_to(map_obj)
+                    folium.raster_layers.TileLayer(
+                        tiles=tile_urls["change"],
+                        attr="Google Earth Engine – Dynamic World Change",
+                        name=f"DW · Change ({ya} → {yb})",
+                        overlay=True,
+                        control=True,
+                        opacity=0.7,
+                    ).add_to(m)
 
-                folium.LayerControl(collapsed=False).add_to(m.m1)
-                folium.LayerControl(collapsed=False).add_to(m.m2)
+            folium.LayerControl(collapsed=False).add_to(m)
+            add_dw_legend_to_map(m)
 
-                add_dw_legend_to_map(m)
+    st_folium(m, height=360, use_container_width=True)
 
-            else:
-                # Single map with layers
-                m = folium.Map(
-                    location=[LOCATION_LAT, LOCATION_LON],
-                    zoom_start=11,
-                    tiles=None,
-                    control_scale=True,
-                )
+    # Metrics under map
+    if af == "change_detection":
+        mode_label = "Change detection"
+        summary = f"{ya} → {yb}"
+    elif af == "single_year":
+        mode_label = "Single year"
+        summary = f"{ya}"
+    else:
+        mode_label = "Time series"
+        summary = f"{ya} – {yb}"
 
-                folium.TileLayer(
-                    tiles=(
-                        "https://server.arcgisonline.com/ArcGIS/rest/services/"
-                        "World_Imagery/MapServer/tile/{z}/{y}/{x}"
-                    ),
-                    attr="Esri World Imagery",
-                    name="Satellite",
-                    overlay=False,
-                    control=True,
-                ).add_to(m)
+    st.markdown(
+        """
+        <div style="font-size:11px;color:#9ca3af;margin-top:6px;margin-bottom:3px;">
+          Change Analysis
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
-                if af == "single_year":
-                    if tile_urls.get("a"):
-                        folium.raster_layers.TileLayer(
-                            tiles=tile_urls["a"],
-                            attr="Google Earth Engine – Dynamic World",
-                            name=f"DW · {ya}",
-                            overlay=True,
-                            control=True,
-                            opacity=0.85,
-                        ).add_to(m)
-                else:
-                    if tile_urls.get("a"):
-                        folium.raster_layers.TileLayer(
-                            tiles=tile_urls["a"],
-                            attr="Google Earth Engine – Dynamic World",
-                            name=f"DW · Start ({ya})",
-                            overlay=True,
-                            control=True,
-                            opacity=0.8,
-                        ).add_to(m)
-                    if tile_urls.get("b"):
-                        folium.raster_layers.TileLayer(
-                            tiles=tile_urls["b"],
-                            attr="Google Earth Engine – Dynamic World",
-                            name=f"DW · End ({yb})",
-                            overlay=True,
-                            control=True,
-                            opacity=0.8,
-                        ).add_to(m)
-                    if tile_urls.get("change"):
-                        folium.raster_layers.TileLayer(
-                            tiles=tile_urls["change"],
-                            attr="Google Earth Engine – Dynamic World Change",
-                            name=f"DW · Change ({ya} → {yb})",
-                            overlay=True,
-                            control=True,
-                            opacity=0.7,
-                        ).add_to(m)
+    st.markdown("<div class='metrics-row'>", unsafe_allow_html=True)
+    st.markdown(
+        f"""
+        <div class="metric-card">
+          <div class="metric-label">Mode</div>
+          <div class="metric-value">{mode_label}</div>
+          <div class="metric-sub">Driven by controls &amp; chatbot</div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+    st.markdown(
+        f"""
+        <div class="metric-card">
+          <div class="metric-label">Selected years</div>
+          <div class="metric-value">{summary}</div>
+          <div class="metric-sub">Earth Engine Dynamic World</div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+    st.markdown(
+        f"""
+        <div class="metric-card">
+          <div class="metric-label">Study area</div>
+          <div class="metric-value">{LOCATION_NAME}</div>
+          <div class="metric-sub">Location fixed in this demo</div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+    st.markdown("</div>", unsafe_allow_html=True)  # metrics-row
+    st.markdown("</div>", unsafe_allow_html=True)  # map-card
+    st.markdown("</div>", unsafe_allow_html=True)  # main-column
 
-                folium.LayerControl(collapsed=False).add_to(m)
-                add_dw_legend_to_map(m)
-
-        st_folium(m, height=580, use_container_width=True)
-
-    # ---- REPORT TAB ----
-    with report_tab:
-        if st.session_state["change_report_text"]:
-            st.markdown(
-                "#### Change analysis report\n"
-                "_Generated from Phase-1 statistics + your last question._\n",
-            )
-            st.markdown(st.session_state["change_report_text"])
-        else:
-            st.info(
-                "No change-analysis report yet.\n\n"
-                "Use **Chat mode → Change analysis report**, ask a question, "
-                "and press **Run** to generate one."
-            )
-
-    st.markdown("</div>", unsafe_allow_html=True)  # end right panel card
+st.markdown("</div>", unsafe_allow_html=True)  # app-shell
