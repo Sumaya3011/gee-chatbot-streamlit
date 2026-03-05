@@ -15,11 +15,12 @@
 
   <style>
     :root {
-      --bg-main: #020617;
-      --bg-panel: #020617;
-      --bg-nav: #020617;
-      --bg-bottom: #020617;
-      --border-subtle: #1e293b;
+      /* more gray, less blue */
+      --bg-main: #05070a;
+      --bg-panel: #0a0d14;
+      --bg-nav: #05070a;
+      --bg-bottom: #05070a;
+      --border-subtle: #181b24;
       --accent: #2563eb;
       --accent-soft: rgba(37, 99, 235, 0.12);
       --text-main: #e5e7eb;
@@ -53,7 +54,7 @@
       height: 100vh;
     }
 
-    /* TOP BAR (matches screenshot) */
+    /* TOP BAR */
     header.top-bar {
       height: 64px;
       background: var(--bg-nav);
@@ -71,8 +72,9 @@
     }
 
     .top-brand-title {
-      font-size: 18px;
-      font-weight: 600;
+      font-size: 22px;          /* enlarged */
+      font-weight: 700;
+      letter-spacing: 0.02em;
     }
 
     .top-brand-subtitle {
@@ -85,7 +87,7 @@
       color: var(--text-soft);
     }
 
-    /* MAIN GRID: left panel + right area + bottom strip */
+    /* MAIN GRID */
     main.app-main {
       flex: 1;
       display: grid;
@@ -123,11 +125,10 @@
       background: var(--bg-panel);
       border-radius: 14px;
       border: 1px solid var(--border-subtle);
-      box-shadow: 0 18px 40px rgba(15, 23, 42, 0.9);
+      box-shadow: 0 18px 40px rgba(0, 0, 0, 0.9);
       padding: 14px 14px 12px;
     }
 
-    /* Monitor Functions card */
     .monitor-title {
       font-size: 13px;
       font-weight: 600;
@@ -179,7 +180,7 @@
       width: 100%;
       border-radius: 10px;
       border: 1px solid #111827;
-      background: #020617;
+      background: #05070a;
       color: var(--text-main);
       font-size: 12px;
       padding: 6px 10px;
@@ -199,11 +200,15 @@
     }
 
     .monitor-divider {
-      border-top: 1px solid #111827;
+      border-top: 1px solid #101318;
       margin: 10px 0 8px;
     }
 
-    /* Chatbot card (bottom left like screenshot) */
+    /* Chatbot card */
+    .chatbot-box {
+      margin-top: 18px;     /* pushed a bit down */
+    }
+
     .chatbot-header {
       display: flex;
       justify-content: space-between;
@@ -211,10 +216,6 @@
       margin-bottom: 6px;
       font-size: 13px;
       font-weight: 600;
-    }
-
-    .chatbot-header span {
-      font-size: 13px;
     }
 
     .chat-toggle {
@@ -229,7 +230,7 @@
     .chat-messages {
       border-radius: 10px;
       border: 1px solid #111827;
-      background: #020617;
+      background: #05070a;
       padding: 8px;
       height: 120px;
       overflow-y: auto;
@@ -240,22 +241,23 @@
       margin-bottom: 6px;
     }
 
-    .message.bot .bubble {
-      background: #111827;
-      color: #e5e7eb;
-    }
-
-    .message.user .bubble {
-      background: #1d4ed8;
-      color: #e5e7eb;
-    }
-
     .bubble {
       padding: 6px 8px;
       border-radius: 10px;
       line-height: 1.4;
       white-space: pre-wrap;
       max-width: 100%;
+      font-size: 12px;
+    }
+
+    .message.bot .bubble {
+      background: #10131b;
+      color: #e5e7eb;
+    }
+
+    .message.user .bubble {
+      background: #1d4ed8;
+      color: #e5e7eb;
     }
 
     .chat-form {
@@ -268,7 +270,7 @@
       flex: 1;
       border-radius: 999px;
       border: 1px solid #111827;
-      background: #020617;
+      background: #05070a;
       color: var(--text-main);
       font-size: 12px;
       padding: 6px 12px;
@@ -295,7 +297,7 @@
       transform: translateY(-0.5px);
     }
 
-    /* RIGHT AREA: map + report */
+    /* RIGHT AREA */
     .right-area {
       grid-area: right;
       display: flex;
@@ -309,7 +311,8 @@
       border-radius: 14px;
       overflow: hidden;
       border: 1px solid #111827;
-      box-shadow: 0 18px 40px rgba(15, 23, 42, 0.9);
+      box-shadow: 0 18px 40px rgba(0, 0, 0, 0.9);
+      background: #05070a;
     }
 
     #map {
@@ -323,14 +326,14 @@
       left: 10px;
       padding: 4px 10px;
       border-radius: 999px;
-      background: rgba(15, 118, 110, 0.15);
-      border: 1px solid rgba(34, 197, 94, 0.8);
+      background: rgba(15, 23, 42, 0.7);
+      border: 1px solid rgba(148, 163, 184, 0.9);
       font-size: 10px;
-      color: #bbf7d0;
+      color: #e5e7eb;
       backdrop-filter: blur(6px);
     }
 
-    /* Report & Analysis strip (inside right area, like screenshot) */
+    /* REPORT STRIP */
     .report-analysis {
       background: var(--bg-bottom);
       border-radius: 10px;
@@ -495,7 +498,6 @@
           <div class="map-overlay-badge">Live</div>
         </div>
 
-        <!-- Bottom report strip inside right panel -->
         <section class="report-analysis">
           <div>
             <div class="report-label">Current layer</div>
@@ -525,8 +527,6 @@
           </div>
         </section>
       </div>
-
-      <!-- bottom area is visually this report bar; grid-area already "bottom" via main -->
     </main>
   </div>
 
@@ -538,9 +538,8 @@
   ></script>
 
   <script>
-    // --- MAP SETUP (Leaflet, dark theme just like screenshot) ---
-    const map = L.map("map").setView([26.3, 55.28], 3); // center somewhere nice
-
+    // MAP (dark gray basemap)
+    const map = L.map("map").setView([26.3, 55.28], 3);
     L.tileLayer(
       "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
       {
@@ -551,9 +550,6 @@
       }
     ).addTo(map);
 
-    // In the real app you would add your EE Dynamic World tiles here using L.tileLayer(tileUrl, {...})
-
-    // --- UI SYNC: update bottom strip when mode / years / city change ---
     function currentMode() {
       const r = document.querySelector('input[name="mode"]:checked');
       return r ? r.value : "change_detection";
@@ -576,7 +572,6 @@
       document.getElementById("report-region").textContent = city;
       document.getElementById("report-years").textContent = yearA + " → " + yearB;
 
-      // This is just demo text; in real app you'll overwrite with backend response
       document.getElementById("report-summary").textContent =
         "Summary for " +
         city +
@@ -598,7 +593,6 @@
 
     refreshSummary();
 
-    // --- CHAT HANDLING (front-end only; plug in your backend later) ---
     function appendMessage(role, text) {
       const container = document.getElementById("chat-messages");
       const msg = document.createElement("div");
@@ -619,7 +613,6 @@
 
       appendMessage("user", text);
 
-      // In real app you call your FastAPI / Streamlit endpoint here.
       const mode = modeToLabel(currentMode());
       const yearA = document.getElementById("yearA").value;
       const yearB = document.getElementById("yearB").value;
