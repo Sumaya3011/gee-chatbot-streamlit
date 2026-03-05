@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Dynamic World – Change Detection Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <style>
+    :root {
+      --bg-dark: #020617;
+      --bg-elevated: #020617;
+      --bg-sidebar: #020617;
+      --border-subtle: #1f2937;
+      --accent: #2563eb;
+      --accent-soft: rgba(37, 99, 235, 0.1);
+      --text-main: #e5e7eb;
+      --text-muted: #9ca3af;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html, body {
+      height: 100%;
+      background: radial-gradient(circle at top left, #020617, #020617);
+      color: var(--text-main);
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    }
+
+    body {
+      display: flex;
+      justify-content: center;
+      padding: 16px;
+    }
+
+    .app-shell {
+      width: 100%;
+      max-width: 1320px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    /* Top bar */
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .top-main {
+      margin-top: 4px;
+      margin-bottom: 6px;
+    }
+
+    .top-title {
+      font-size: 20px;
+      font-weight: 600;
+      color: #f9fafb;
+    }
+
+    .top-subtitle {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    /* Layout: sidebar + main */
+    .layout {
+      display: grid;
+      grid-template-columns: 300px minmax(0, 1fr);
+      gap: 20px;
+      align-items: stretch;
+    }
+
+    /* Cards */
+    .card {
+      background: var(--bg-elevated);
+      border-radius: 18px;
+      border: 1px solid var(--border-subtle);
+      box-shadow: 0 22px 45px rgba(15, 23, 42, 0.9);
+      padding: 16px 16px 14px;
+    }
+
+    .sidebar-card {
+      background: var(--bg-sidebar);
+      border-radius: 18px;
+      border: 1px solid var(--border-subtle);
+      box-shadow: 0 22px 45px rgba(15, 23, 42, 0.9);
+      padding: 18px 16px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .sidebar-section-title {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-main);
+      margin-bottom: 4px;
+    }
+
+    .sidebar-subtext {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+    }
+
+    .divider {
+      border-top: 1px solid #111827;
+      margin: 8px 0;
+    }
+
+    /* Form controls */
+    label {
+      font-size: 11px;
+      color: var(--text-muted);
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    select, input[type="text"], input[type="number"], textarea {
+      width: 100%;
+      background: #020617;
+      color: var(--text-main);
+      border-radius: 10px;
+      border: 1px solid #1f2937;
+      padding: 6px 10px;
+      font-size: 12px;
+      outline: none;
+    }
+
+    select:focus,
+    input[type="text"]:focus,
+    input[type="number"]:focus,
+    textarea:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.5);
+    }
+
+    .radio-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-top: 4px;
+    }
+
+    .radio-pill {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 10px;
+      border-radius: 10px;
+      border: 1px solid #1f2937;
+      background: #020617;
+      cursor: pointer;
+      font-size: 12px;
+    }
+
+    .radio-pill input {
+      accent-color: var(--accent);
+    }
+
+    .pill-caption {
+      font-size: 10px;
+      color: var(--text-muted);
+      margin-top: 3px;
+    }
+
+    /* Chat */
+    .chat-container {
+      border-radius: 12px;
+      background: #020617;
+      border: 1px solid #1f2937;
+      padding: 10px;
+      height: 220px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .chat-row {
+      display: flex;
+    }
+    .chat-row.user {
+      justify-content: flex-end;
+    }
+    .chat-row.assistant {
+      justify-content: flex-start;
+    }
+
+    .chat-meta {
+      font-size: 10px;
+      color: #6b7280;
+      margin-bottom: 2px;
+    }
+
+    .chat-bubble {
+      max-width: 90%;
+      padding: 7px 10px;
+      border-radius: 12px;
+      font-size: 13px;
+      line-height: 1.4;
+      white-space: pre-wrap;
+    }
+
+    .chat-bubble.user {
+      background: #1d4ed8;
+      color: #e5e7eb;
+    }
+
+    .chat-bubble.assistant {
+      background: #111827;
+      color: #e5e7eb;
+    }
+
+    .chat-input-row {
+      display: flex;
+      gap: 6px;
+      margin-top: 8px;
+    }
+
+    .chat-input-row input {
+      flex: 1;
+    }
+
+    .primary-btn {
+      border-radius: 999px;
+      padding: 6px 12px;
+      font-size: 12px;
+      font-weight: 500;
+      background: linear-gradient(135deg, #2563eb, #4f46e5);
+      border: none;
+      color: #fff;
+      cursor: pointer;
+      box-shadow: 0 8px 18px rgba(37,99,235,0.45);
+    }
+
+    .primary-btn:hover {
+      box-shadow: 0 10px 22px rgba(37,99,235,0.7);
+      transform: translateY(-0.5px);
+    }
+
+    /* Main panel: map + analysis */
+    .main-header {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      align-items: center;
+      margin-bottom: 8px;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .main-header-left,
+    .main-header-right {
+      font-size: 13px;
+      font-weight: 600;
+      color: #f9fafb;
+    }
+
+    .main-header-right {
+      text-align: right;
+    }
+
+    .map-wrapper {
+      width: 100%;
+      height: 520px;
+      border-radius: 14px;
+      overflow: hidden;
+      border: 1px solid #111827;
+      background: #020617;
+      margin-bottom: 14px;
+    }
+
+    .map-placeholder {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #4b5563;
+      font-size: 13px;
+    }
+
+    /* Change analysis */
+    .analysis-header {
+      font-size: 13px;
+      font-weight: 600;
+      color: #f9fafb;
+      margin-bottom: 6px;
+    }
+
+    .analysis-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .metric-card {
+      background: #020617;
+      border-radius: 14px;
+      border: 1px solid #1f2937;
+      padding: 10px 12px;
+    }
+
+    .metric-label {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-bottom: 2px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    .metric-value {
+      font-size: 18px;
+      font-weight: 600;
+      color: #f9fafb;
+    }
+
+    .metric-caption {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    /* Responsive */
+    @media (max-width: 900px) {
+      body {
+        padding: 8px;
+      }
+      .layout {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <!-- Top bar -->
+    <div class="top-bar">
+      <div>◀ Back to Dashboard</div>
+      <div>Dynamic World · Google Earth Engine</div>
+    </div>
+
+    <div class="top-main">
+      <div class="top-title">Change Detection Analysis</div>
+      <div class="top-subtitle">
+        Compare environmental changes over time for your study area.
+      </div>
+    </div>
+
+    <!-- Main layout -->
+    <div class="layout">
+      <!-- LEFT: SIDEBAR -->
+      <div class="sidebar-card">
+        <!-- Analysis settings -->
+        <section>
+          <div class="sidebar-section-title">Analysis Settings</div>
+          <div class="sidebar-subtext">
+            Choose function and years. This will drive the map and analysis.
+          </div>
+
+          <label>Function</label>
+          <div class="radio-group">
+            <label class="radio-pill">
+              <input type="radio" name="mode" value="change_detection" checked />
+              <span>Change detection (A → B)</span>
+            </label>
+            <label class="radio-pill">
+              <input type="radio" name="mode" value="single_year" />
+              <span>Single year map</span>
+            </label>
+            <label class="radio-pill">
+              <input type="radio" name="mode" value="timeseries" />
+              <span>Time series (A → B)</span>
+            </label>
+          </div>
+
+          <div style="display:flex; gap:8px; margin-top:10px;">
+            <div style="flex:1;">
+              <label>Year A (Before / Start)</label>
+              <select id="yearA">
+                <!-- You will fill with Python or JS -->
+                <option>2020</option>
+                <option selected>2021</option>
+                <option>2022</option>
+                <option>2023</option>
+                <option>2024</option>
+              </select>
+            </div>
+            <div style="flex:1;">
+              <label>Year B (After / End)</label>
+              <select id="yearB">
+                <option>2020</option>
+                <option>2021</option>
+                <option>2022</option>
+                <option selected>2023</option>
+                <option>2024</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="pill-caption">
+            In your real app these years come from the backend (Dynamic World availability).
+          </div>
+        </section>
+
+        <div class="divider"></div>
+
+        <!-- Location -->
+        <section>
+          <div class="sidebar-section-title">Location</div>
+          <div class="sidebar-subtext">
+            Type a city and the map will center on it.
+          </div>
+
+          <label for="city">City name</label>
+          <input id="city" type="text" placeholder="Abu Dhabi, Dubai, Berlin..." />
+
+          <div class="pill-caption" style="margin-top:6px;">
+            In the real app, you send this city to the backend, geocode it, and update
+            the Earth Engine point + map center.
+          </div>
+        </section>
+
+        <div class="divider"></div>
+
+        <!-- Chatbot -->
+        <section>
+          <div class="sidebar-section-title">Chatbot</div>
+          <div class="sidebar-subtext">
+            Ask about changes or control the settings using natural language.
+          </div>
+          <div class="pill-caption">
+            e.g. “Explain the main changes”, “swap years”, “reset map”.
+          </div>
+
+          <div class="chat-container" id="chat">
+            <!-- Example conversation -->
+            <div class="chat-row assistant">
+              <div>
+                <div class="chat-meta">Assistant</div>
+                <div class="chat-bubble assistant">
+                  Hi! I can help you explore Dynamic World land cover and update the map.
+
+                  You can change the function and years, then ask me to explain what changed.
+                </div>
+              </div>
+            </div>
+            <div class="chat-row user">
+              <div>
+                <div class="chat-meta" style="text-align:right;">You</div>
+                <div class="chat-bubble user">
+                  Explain the main land cover changes between 2020 and 2024.
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="chat-input-row">
+            <input
+              id="chatInput"
+              type="text"
+              placeholder='Type a question e.g. "Explain the change"...'
+            />
+            <button class="primary-btn" onclick="sendChat()">
+              ▶
+            </button>
+          </div>
+        </section>
+      </div>
+
+      <!-- RIGHT: MAIN PANEL -->
+      <div class="card">
+        <!-- Header above map -->
+        <div class="main-header">
+          <div class="main-header-left" id="header-left">Before</div>
+          <div style="text-align:center; font-size:11px; color:var(--text-muted);" id="header-center">
+            Abu Dhabi (example)
+          </div>
+          <div class="main-header-right" id="header-right">After</div>
+        </div>
+
+        <!-- Map container (you will inject Folium / Leaflet / iframe here) -->
+        <div class="map-wrapper" id="map">
+          <div class="map-placeholder">
+            Map goes here – link this div to your Folium / Leaflet map using
+            backend tile URLs.
+          </div>
+        </div>
+
+        <!-- Change analysis -->
+        <div class="analysis-header">Change Analysis</div>
+        <div class="analysis-grid">
+          <div class="metric-card">
+            <div class="metric-label">Overall Change</div>
+            <div class="metric-value">N/A</div>
+            <div class="metric-caption">
+              Numerical area % change comes from Phase-1 stats (not wired yet).
+            </div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">Time Span</div>
+            <div class="metric-value" id="timespan">4 years</div>
+            <div class="metric-caption" id="timespan-caption">From 2020 to 2024.</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">Current Mode</div>
+            <div class="metric-value" id="mode-label">Change detection</div>
+            <div class="metric-caption">
+              This matches the mode selected in the sidebar.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tiny JS just to make the mock interactive (front-end only) -->
+  <script>
+    function updateSummary() {
+      const yearA = document.getElementById("yearA").value;
+      const yearB = document.getElementById("yearB").value;
+      const caption = document.getElementById("timespan-caption");
+      const span = document.getElementById("timespan");
+      const a = parseInt(yearA, 10);
+      const b = parseInt(yearB, 10);
+
+      if (!isNaN(a) && !isNaN(b)) {
+        if (a === b) {
+          span.textContent = "Same year";
+        } else {
+          span.textContent = Math.abs(b - a) + " years";
+        }
+        caption.textContent = `From ${yearA} to ${yearB}.`;
+      }
+
+      // Update header labels
+      const mode = document.querySelector('input[name="mode"]:checked').value;
+      const headerLeft = document.getElementById("header-left");
+      const headerRight = document.getElementById("header-right");
+      const modeLabel = document.getElementById("mode-label");
+
+      if (mode === "change_detection") {
+        headerLeft.textContent = "Before (" + yearA + ")";
+        headerRight.textContent = "After (" + yearB + ")";
+        modeLabel.textContent = "Change detection";
+      } else if (mode === "single_year") {
+        headerLeft.textContent = "Map view";
+        headerRight.textContent = "";
+        modeLabel.textContent = "Single year";
+      } else {
+        headerLeft.textContent = "Start (" + yearA + ")";
+        headerRight.textContent = "End (" + yearB + ")";
+        modeLabel.textContent = "Time series";
+      }
+    }
+
+    document.getElementById("yearA").addEventListener("change", updateSummary);
+    document.getElementById("yearB").addEventListener("change", updateSummary);
+    document.querySelectorAll('input[name="mode"]').forEach(r =>
+      r.addEventListener("change", updateSummary)
+    );
+    updateSummary();
+
+    function sendChat() {
+      const input = document.getElementById("chatInput");
+      const text = input.value.trim();
+      if (!text) return;
+
+      const chat = document.getElementById("chat");
+
+      // Add user bubble
+      const rowUser = document.createElement("div");
+      rowUser.className = "chat-row user";
+      rowUser.innerHTML = `
+        <div>
+          <div class="chat-meta" style="text-align:right;">You</div>
+          <div class="chat-bubble user">${text}</div>
+        </div>`;
+      chat.appendChild(rowUser);
+
+      // Fake assistant reply (front-end only)
+      const rowAs = document.createElement("div");
+      rowAs.className = "chat-row assistant";
+      rowAs.innerHTML = `
+        <div>
+          <div class="chat-meta">Assistant</div>
+          <div class="chat-bubble assistant">
+            (Demo reply) In the real app, this message would come from your
+            Python/OpenAI backend based on the current map settings and Dynamic World data.
+          </div>
+        </div>`;
+      chat.appendChild(rowAs);
+
+      chat.scrollTop = chat.scrollHeight;
+      input.value = "";
+    }
+  </script>
+</body>
+</html>
