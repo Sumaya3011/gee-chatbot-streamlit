@@ -7,14 +7,18 @@
 
   <style>
     :root {
-      --bg-dark: #020617;
-      --bg-elevated: #020617;
+      --bg-body: #020617;
+      --bg-nav: #020617;
       --bg-sidebar: #020617;
-      --border-subtle: #1f2937;
+      --bg-card: #020617;
+      --bg-chat: #020617;
+      --bg-bottom: #020617;
+      --border-subtle: #1e293b;
       --accent: #2563eb;
-      --accent-soft: rgba(37, 99, 235, 0.1);
+      --accent-soft: rgba(37, 99, 235, 0.12);
       --text-main: #e5e7eb;
       --text-muted: #9ca3af;
+      --text-soft: #6b7280;
     }
 
     * {
@@ -25,7 +29,7 @@
 
     html, body {
       height: 100%;
-      background: radial-gradient(circle at top left, #020617, #020617);
+      background: var(--bg-body);
       color: var(--text-main);
       font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
     }
@@ -33,92 +37,93 @@
     body {
       display: flex;
       justify-content: center;
-      padding: 16px;
+      padding: 0;
     }
 
     .app-shell {
       width: 100%;
-      max-width: 1320px;
+      max-width: 1380px;
       display: flex;
       flex-direction: column;
-      gap: 10px;
+      height: 100vh;
     }
 
-    /* Top bar */
-    .top-bar {
+    /* TOP NAVBAR (EarthMonitor style) */
+    .top-nav {
+      height: 64px;
+      background: var(--bg-nav);
+      border-bottom: 1px solid var(--border-subtle);
       display: flex;
-      justify-content: space-between;
       align-items: center;
-      font-size: 12px;
-      color: var(--text-muted);
+      justify-content: space-between;
+      padding: 0 24px;
     }
 
-    .top-main {
-      margin-top: 4px;
-      margin-bottom: 6px;
+    .brand {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
     }
 
-    .top-title {
-      font-size: 20px;
+    .brand-title {
+      font-size: 18px;
       font-weight: 600;
-      color: #f9fafb;
+      letter-spacing: 0.02em;
     }
 
-    .top-subtitle {
-      font-size: 12px;
-      color: var(--text-muted);
-      margin-top: 2px;
+    .brand-subtitle {
+      font-size: 11px;
+      color: var(--text-soft);
     }
 
-    /* Layout: sidebar + main */
-    .layout {
+    .nav-right-text {
+      font-size: 11px;
+      color: var(--text-soft);
+    }
+
+    /* MAIN LAYOUT */
+    .main-layout {
+      flex: 1;
       display: grid;
       grid-template-columns: 300px minmax(0, 1fr);
-      gap: 20px;
-      align-items: stretch;
+      grid-template-rows: minmax(0, 1fr) auto;
+      grid-template-areas:
+        "sidebar map"
+        "bottom bottom";
+      column-gap: 16px;
+      row-gap: 10px;
+      padding: 16px 24px 14px;
     }
 
-    /* Cards */
-    .card {
-      background: var(--bg-elevated);
-      border-radius: 18px;
-      border: 1px solid var(--border-subtle);
-      box-shadow: 0 22px 45px rgba(15, 23, 42, 0.9);
-      padding: 16px 16px 14px;
-    }
-
-    .sidebar-card {
-      background: var(--bg-sidebar);
-      border-radius: 18px;
-      border: 1px solid var(--border-subtle);
-      box-shadow: 0 22px 45px rgba(15, 23, 42, 0.9);
-      padding: 18px 16px 16px;
+    /* SIDEBAR LEFT */
+    .sidebar {
+      grid-area: sidebar;
       display: flex;
       flex-direction: column;
       gap: 12px;
     }
 
+    .sidebar-card {
+      background: var(--bg-sidebar);
+      border-radius: 14px;
+      border: 1px solid var(--border-subtle);
+      box-shadow: 0 18px 40px rgba(15, 23, 42, 0.85);
+      padding: 14px 14px 14px;
+    }
+
     .sidebar-section-title {
-      font-size: 11px;
+      font-size: 12px;
       font-weight: 600;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
       color: var(--text-main);
-      margin-bottom: 4px;
+      margin-bottom: 6px;
     }
 
     .sidebar-subtext {
       font-size: 11px;
       color: var(--text-muted);
-      margin-bottom: 4px;
+      margin-bottom: 8px;
     }
 
-    .divider {
-      border-top: 1px solid #111827;
-      margin: 8px 0;
-    }
-
-    /* Form controls */
     label {
       font-size: 11px;
       color: var(--text-muted);
@@ -126,75 +131,106 @@
       margin-bottom: 4px;
     }
 
-    select, input[type="text"], input[type="number"], textarea {
+    /* Radio group (monitor functions style) */
+    .radio-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 4px;
+    }
+
+    .radio-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: var(--text-main);
+      cursor: pointer;
+    }
+
+    .radio-item input[type="radio"] {
+      accent-color: var(--accent);
+      width: 14px;
+      height: 14px;
+    }
+
+    /* Inputs */
+    input[type="text"], select {
       width: 100%;
       background: #020617;
       color: var(--text-main);
       border-radius: 10px;
-      border: 1px solid #1f2937;
+      border: 1px solid #111827;
       padding: 6px 10px;
       font-size: 12px;
       outline: none;
     }
 
-    select:focus,
     input[type="text"]:focus,
-    input[type="number"]:focus,
-    textarea:focus {
+    select:focus {
       border-color: var(--accent);
       box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.5);
     }
 
-    .radio-group {
+    .years-row {
       display: flex;
-      flex-direction: column;
-      gap: 6px;
+      gap: 8px;
+      margin-top: 6px;
+    }
+
+    .field-caption {
+      font-size: 10px;
+      color: var(--text-soft);
       margin-top: 4px;
     }
 
-    .radio-pill {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      padding: 6px 10px;
-      border-radius: 10px;
-      border: 1px solid #1f2937;
-      background: #020617;
-      cursor: pointer;
-      font-size: 12px;
+    .divider {
+      border-top: 1px solid #111827;
+      margin: 10px 0 8px;
     }
 
-    .radio-pill input {
-      accent-color: var(--accent);
-    }
-
-    .pill-caption {
-      font-size: 10px;
-      color: var(--text-muted);
-      margin-top: 3px;
-    }
-
-    /* Chat */
-    .chat-container {
-      border-radius: 12px;
-      background: #020617;
-      border: 1px solid #1f2937;
-      padding: 10px;
-      height: 220px;
-      overflow-y: auto;
+    /* ASSISTANT CARD (bottom left like screenshot) */
+    .assistant-card {
+      background: var(--bg-chat);
+      border-radius: 14px;
+      border: 1px solid var(--border-subtle);
+      box-shadow: 0 18px 35px rgba(15, 23, 42, 0.9);
+      padding: 12px 12px 10px;
       display: flex;
       flex-direction: column;
-      gap: 6px;
+      gap: 8px;
+    }
+
+    .assistant-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .assistant-body {
+      background: #020617;
+      border-radius: 10px;
+      border: 1px solid #111827;
+      padding: 10px;
+      font-size: 12px;
+      color: var(--text-muted);
+      min-height: 60px;
+    }
+
+    .assistant-chat-log {
+      border-radius: 10px;
+      border: 1px solid #111827;
+      background: #020617;
+      padding: 8px;
+      height: 120px;
+      overflow-y: auto;
+      margin-top: 4px;
     }
 
     .chat-row {
-      display: flex;
-    }
-    .chat-row.user {
-      justify-content: flex-end;
-    }
-    .chat-row.assistant {
-      justify-content: flex-start;
+      margin-bottom: 6px;
     }
 
     .chat-meta {
@@ -204,17 +240,12 @@
     }
 
     .chat-bubble {
-      max-width: 90%;
-      padding: 7px 10px;
-      border-radius: 12px;
-      font-size: 13px;
+      font-size: 12px;
       line-height: 1.4;
+      padding: 6px 8px;
+      border-radius: 10px;
+      max-width: 100%;
       white-space: pre-wrap;
-    }
-
-    .chat-bubble.user {
-      background: #1d4ed8;
-      color: #e5e7eb;
     }
 
     .chat-bubble.assistant {
@@ -222,14 +253,29 @@
       color: #e5e7eb;
     }
 
-    .chat-input-row {
-      display: flex;
-      gap: 6px;
-      margin-top: 8px;
+    .chat-bubble.user {
+      background: #1d4ed8;
+      color: #e5e7eb;
     }
 
-    .chat-input-row input {
+    .assistant-input-row {
+      display: flex;
+      gap: 6px;
+      margin-top: 6px;
+    }
+
+    .assistant-input-row input {
       flex: 1;
+      font-size: 12px;
+      padding: 6px 8px;
+      border-radius: 999px;
+      border: 1px solid #111827;
+      background: #020617;
+      color: var(--text-main);
+    }
+
+    .assistant-input-row input::placeholder {
+      color: #6b7280;
     }
 
     .primary-btn {
@@ -239,166 +285,195 @@
       font-weight: 500;
       background: linear-gradient(135deg, #2563eb, #4f46e5);
       border: none;
-      color: #fff;
+      color: #ffffff;
       cursor: pointer;
-      box-shadow: 0 8px 18px rgba(37,99,235,0.45);
+      white-space: nowrap;
     }
 
     .primary-btn:hover {
-      box-shadow: 0 10px 22px rgba(37,99,235,0.7);
+      box-shadow: 0 8px 18px rgba(37, 99, 235, 0.55);
       transform: translateY(-0.5px);
     }
 
-    /* Main panel: map + analysis */
-    .main-header {
-      display: grid;
-      grid-template-columns: 1fr auto 1fr;
-      align-items: center;
-      margin-bottom: 8px;
-      font-size: 12px;
-      color: var(--text-muted);
+    /* MAP AREA (center-right) */
+    .map-area {
+      grid-area: map;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
     }
 
-    .main-header-left,
-    .main-header-right {
-      font-size: 13px;
-      font-weight: 600;
-      color: #f9fafb;
+    .map-card {
+      background: var(--bg-card);
+      border-radius: 18px;
+      border: 1px solid var(--border-subtle);
+      box-shadow: 0 18px 40px rgba(15, 23, 42, 0.9);
+      padding: 12px 12px 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      height: 100%;
     }
 
-    .main-header-right {
-      text-align: right;
-    }
-
-    .map-wrapper {
-      width: 100%;
-      height: 520px;
+    .map-container {
+      flex: 1;
       border-radius: 14px;
       overflow: hidden;
       border: 1px solid #111827;
       background: #020617;
-      margin-bottom: 14px;
     }
 
+    /* Placeholder while you wire Folium/Leaflet */
     .map-placeholder {
       width: 100%;
       height: 100%;
+      color: #4b5563;
+      font-size: 12px;
       display: flex;
       align-items: center;
       justify-content: center;
-      color: #4b5563;
-      font-size: 13px;
     }
 
-    /* Change analysis */
-    .analysis-header {
+    .map-header-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      color: var(--text-muted);
+      padding: 0 2px;
+    }
+
+    .map-header-main {
       font-size: 13px;
+      font-weight: 500;
+      color: #e5e7eb;
+    }
+
+    /* BOTTOM BAR */
+    .bottom-bar {
+      grid-area: bottom;
+      background: var(--bg-bottom);
+      border-top: 1px solid var(--border-subtle);
+      padding: 10px 24px 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .bottom-title {
+      font-size: 12px;
       font-weight: 600;
-      color: #f9fafb;
-      margin-bottom: 6px;
+      color: #e5e7eb;
     }
 
-    .analysis-grid {
+    .bottom-grid {
       display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 10px;
-    }
-
-    .metric-card {
-      background: #020617;
-      border-radius: 14px;
-      border: 1px solid #1f2937;
-      padding: 10px 12px;
-    }
-
-    .metric-label {
+      grid-template-columns: 200px 220px 220px minmax(0, 1fr);
+      gap: 16px;
       font-size: 11px;
       color: var(--text-muted);
-      margin-bottom: 2px;
+    }
+
+    .bottom-label {
+      font-size: 11px;
       text-transform: uppercase;
-      letter-spacing: 0.06em;
+      letter-spacing: 0.08em;
+      color: #9ca3af;
+      margin-bottom: 2px;
     }
 
-    .metric-value {
-      font-size: 18px;
-      font-weight: 600;
-      color: #f9fafb;
+    .bottom-value-main {
+      font-size: 12px;
+      font-weight: 500;
+      color: #e5e7eb;
     }
 
-    .metric-caption {
+    .bottom-value-link {
+      font-size: 12px;
+      font-weight: 500;
+      color: #38bdf8;
+      cursor: default;
+    }
+
+    .bottom-analysis-text {
       font-size: 11px;
       color: var(--text-muted);
-      margin-top: 4px;
     }
 
-    /* Responsive */
-    @media (max-width: 900px) {
-      body {
-        padding: 8px;
-      }
-      .layout {
-        grid-template-columns: 1fr;
+    @media (max-width: 1024px) {
+      .main-layout {
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-rows: auto minmax(0, 1fr) auto;
+        grid-template-areas:
+          "sidebar"
+          "map"
+          "bottom";
       }
     }
   </style>
 </head>
 <body>
   <div class="app-shell">
-    <!-- Top bar -->
-    <div class="top-bar">
-      <div>◀ Back to Dashboard</div>
-      <div>Dynamic World · Google Earth Engine</div>
-    </div>
-
-    <div class="top-main">
-      <div class="top-title">Change Detection Analysis</div>
-      <div class="top-subtitle">
-        Compare environmental changes over time for your study area.
+    <!-- Top navbar -->
+    <header class="top-nav">
+      <div class="brand">
+        <div class="brand-title">EarthMonitor</div>
+        <div class="brand-subtitle">Dynamic World change detection</div>
       </div>
-    </div>
+      <div class="nav-right-text">
+        Google Earth Engine · OpenAI Assistant
+      </div>
+    </header>
 
     <!-- Main layout -->
-    <div class="layout">
-      <!-- LEFT: SIDEBAR -->
-      <div class="sidebar-card">
-        <!-- Analysis settings -->
-        <section>
-          <div class="sidebar-section-title">Analysis Settings</div>
+    <main class="main-layout">
+      <!-- LEFT SIDEBAR -->
+      <aside class="sidebar">
+        <!-- Analysis modes -->
+        <section class="sidebar-card">
+          <div class="sidebar-section-title">Monitor Functions</div>
           <div class="sidebar-subtext">
-            Choose function and years. This will drive the map and analysis.
+            Choose how to explore the Dynamic World land cover.
           </div>
 
-          <label>Function</label>
-          <div class="radio-group">
-            <label class="radio-pill">
+          <div class="radio-list">
+            <label class="radio-item">
               <input type="radio" name="mode" value="change_detection" checked />
-              <span>Change detection (A → B)</span>
+              <span>Change Detection</span>
             </label>
-            <label class="radio-pill">
+            <label class="radio-item">
               <input type="radio" name="mode" value="single_year" />
-              <span>Single year map</span>
+              <span>Single Year Map</span>
             </label>
-            <label class="radio-pill">
+            <label class="radio-item">
               <input type="radio" name="mode" value="timeseries" />
-              <span>Time series (A → B)</span>
+              <span>Time Series</span>
             </label>
           </div>
 
-          <div style="display:flex; gap:8px; margin-top:10px;">
+          <div class="divider"></div>
+
+          <!-- Years -->
+          <label>Years</label>
+          <div class="years-row">
             <div style="flex:1;">
-              <label>Year A (Before / Start)</label>
+              <small class="field-caption">Year A (before / start)</small>
               <select id="yearA">
-                <!-- You will fill with Python or JS -->
-                <option>2020</option>
-                <option selected>2021</option>
+                <option>2017</option>
+                <option>2018</option>
+                <option>2019</option>
+                <option selected>2020</option>
+                <option>2021</option>
                 <option>2022</option>
                 <option>2023</option>
                 <option>2024</option>
               </select>
             </div>
             <div style="flex:1;">
-              <label>Year B (After / End)</label>
+              <small class="field-caption">Year B (after / end)</small>
               <select id="yearB">
+                <option>2017</option>
+                <option>2018</option>
+                <option>2019</option>
                 <option>2020</option>
                 <option>2021</option>
                 <option>2022</option>
@@ -408,200 +483,187 @@
             </div>
           </div>
 
-          <div class="pill-caption">
-            In your real app these years come from the backend (Dynamic World availability).
-          </div>
-        </section>
-
-        <div class="divider"></div>
-
-        <!-- Location -->
-        <section>
-          <div class="sidebar-section-title">Location</div>
-          <div class="sidebar-subtext">
-            Type a city and the map will center on it.
+          <div class="field-caption">
+            These years should match the YEARS list in your Python config.
           </div>
 
-          <label for="city">City name</label>
+          <div class="divider"></div>
+
+          <!-- Location by city -->
+          <label for="city">Region (city name)</label>
           <input id="city" type="text" placeholder="Abu Dhabi, Dubai, Berlin..." />
-
-          <div class="pill-caption" style="margin-top:6px;">
-            In the real app, you send this city to the backend, geocode it, and update
-            the Earth Engine point + map center.
+          <div class="field-caption" id="city-caption">
+            Backend: geocode city → update EE point + map.
           </div>
         </section>
 
-        <div class="divider"></div>
-
-        <!-- Chatbot -->
-        <section>
-          <div class="sidebar-section-title">Chatbot</div>
-          <div class="sidebar-subtext">
-            Ask about changes or control the settings using natural language.
-          </div>
-          <div class="pill-caption">
-            e.g. “Explain the main changes”, “swap years”, “reset map”.
+        <!-- Assistant card (chat) -->
+        <section class="assistant-card">
+          <div class="assistant-header">
+            <span>Assistant</span>
+            <span style="font-size:10px;color:var(--text-soft);">Beta</span>
           </div>
 
-          <div class="chat-container" id="chat">
-            <!-- Example conversation -->
-            <div class="chat-row assistant">
-              <div>
-                <div class="chat-meta">Assistant</div>
-                <div class="chat-bubble assistant">
-                  Hi! I can help you explore Dynamic World land cover and update the map.
+          <div class="assistant-body">
+            Hi! I’m your EarthMonitor assistant. Ask about land cover changes,
+            or tell me to swap years, reset the view, or analyse a specific city.
+          </div>
 
-                  You can change the function and years, then ask me to explain what changed.
-                </div>
-              </div>
-            </div>
-            <div class="chat-row user">
-              <div>
-                <div class="chat-meta" style="text-align:right;">You</div>
-                <div class="chat-bubble user">
-                  Explain the main land cover changes between 2020 and 2024.
-                </div>
+          <div class="assistant-chat-log" id="chat-log">
+            <!-- initial assistant message -->
+            <div class="chat-row">
+              <div class="chat-meta">Assistant</div>
+              <div class="chat-bubble assistant">
+                Hi! I can help you explore Dynamic World land cover and update the map.
+
+                You can change the mode and years, then ask me to explain what changed.
               </div>
             </div>
           </div>
 
-          <div class="chat-input-row">
+          <div class="assistant-input-row">
             <input
-              id="chatInput"
+              id="chat-input"
               type="text"
-              placeholder='Type a question e.g. "Explain the change"...'
+              placeholder='Ask about the map or type "swap years"...'
             />
-            <button class="primary-btn" onclick="sendChat()">
-              ▶
-            </button>
+            <button class="primary-btn" onclick="sendChat()">Send</button>
           </div>
         </section>
-      </div>
+      </aside>
 
-      <!-- RIGHT: MAIN PANEL -->
-      <div class="card">
-        <!-- Header above map -->
-        <div class="main-header">
-          <div class="main-header-left" id="header-left">Before</div>
-          <div style="text-align:center; font-size:11px; color:var(--text-muted);" id="header-center">
-            Abu Dhabi (example)
+      <!-- MAP & VISUAL AREA -->
+      <section class="map-area">
+        <div class="map-card">
+          <div class="map-header-row">
+            <div class="map-header-main" id="map-title-left">Before (2020)</div>
+            <div id="map-title-center">Region: Abu Dhabi (example)</div>
+            <div class="map-header-main" id="map-title-right">After (2023)</div>
           </div>
-          <div class="main-header-right" id="header-right">After</div>
-        </div>
 
-        <!-- Map container (you will inject Folium / Leaflet / iframe here) -->
-        <div class="map-wrapper" id="map">
-          <div class="map-placeholder">
-            Map goes here – link this div to your Folium / Leaflet map using
-            backend tile URLs.
-          </div>
-        </div>
-
-        <!-- Change analysis -->
-        <div class="analysis-header">Change Analysis</div>
-        <div class="analysis-grid">
-          <div class="metric-card">
-            <div class="metric-label">Overall Change</div>
-            <div class="metric-value">N/A</div>
-            <div class="metric-caption">
-              Numerical area % change comes from Phase-1 stats (not wired yet).
-            </div>
-          </div>
-          <div class="metric-card">
-            <div class="metric-label">Time Span</div>
-            <div class="metric-value" id="timespan">4 years</div>
-            <div class="metric-caption" id="timespan-caption">From 2020 to 2024.</div>
-          </div>
-          <div class="metric-card">
-            <div class="metric-label">Current Mode</div>
-            <div class="metric-value" id="mode-label">Change detection</div>
-            <div class="metric-caption">
-              This matches the mode selected in the sidebar.
+          <div class="map-container" id="map-container">
+            <!-- When you integrate, inject your Folium / Leaflet map here -->
+            <div class="map-placeholder">
+              Map placeholder. In your app, this is the Folium / Leaflet map using
+              Earth Engine Dynamic World tiles.
             </div>
           </div>
         </div>
-      </div>
-    </div>
+      </section>
+
+      <!-- BOTTOM REPORT BAR -->
+      <section class="bottom-bar">
+        <div class="bottom-title">Report &amp; Analysis</div>
+
+        <div class="bottom-grid">
+          <div>
+            <div class="bottom-label">Current Mode</div>
+            <div class="bottom-value-main" id="bottom-mode">
+              Change Detection
+            </div>
+          </div>
+          <div>
+            <div class="bottom-label">Selected Region</div>
+            <div class="bottom-value-link" id="bottom-region">
+              Abu Dhabi (example)
+            </div>
+          </div>
+          <div>
+            <div class="bottom-label">Years</div>
+            <div class="bottom-value-main" id="bottom-years">
+              2020 → 2023
+            </div>
+          </div>
+          <div>
+            <div class="bottom-label">Summary</div>
+            <div class="bottom-analysis-text" id="bottom-summary">
+              Vegetation / land cover change explanation generated by the chatbot
+              would appear here, using Phase-1 statistics plus the current map
+              context.
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
   </div>
 
-  <!-- Tiny JS just to make the mock interactive (front-end only) -->
+  <!-- Tiny JS to keep the UI in sync (front-end only) -->
   <script>
-    function updateSummary() {
-      const yearA = document.getElementById("yearA").value;
-      const yearB = document.getElementById("yearB").value;
-      const caption = document.getElementById("timespan-caption");
-      const span = document.getElementById("timespan");
-      const a = parseInt(yearA, 10);
-      const b = parseInt(yearB, 10);
-
-      if (!isNaN(a) && !isNaN(b)) {
-        if (a === b) {
-          span.textContent = "Same year";
-        } else {
-          span.textContent = Math.abs(b - a) + " years";
-        }
-        caption.textContent = `From ${yearA} to ${yearB}.`;
-      }
-
-      // Update header labels
-      const mode = document.querySelector('input[name="mode"]:checked').value;
-      const headerLeft = document.getElementById("header-left");
-      const headerRight = document.getElementById("header-right");
-      const modeLabel = document.getElementById("mode-label");
-
-      if (mode === "change_detection") {
-        headerLeft.textContent = "Before (" + yearA + ")";
-        headerRight.textContent = "After (" + yearB + ")";
-        modeLabel.textContent = "Change detection";
-      } else if (mode === "single_year") {
-        headerLeft.textContent = "Map view";
-        headerRight.textContent = "";
-        modeLabel.textContent = "Single year";
-      } else {
-        headerLeft.textContent = "Start (" + yearA + ")";
-        headerRight.textContent = "End (" + yearB + ")";
-        modeLabel.textContent = "Time series";
-      }
+    function getModeText(value) {
+      if (value === "change_detection") return "Change Detection";
+      if (value === "single_year") return "Single Year Map";
+      if (value === "timeseries") return "Time Series";
+      return value;
     }
 
-    document.getElementById("yearA").addEventListener("change", updateSummary);
-    document.getElementById("yearB").addEventListener("change", updateSummary);
-    document.querySelectorAll('input[name="mode"]').forEach(r =>
-      r.addEventListener("change", updateSummary)
-    );
-    updateSummary();
+    function updateUI() {
+      const yearA = document.getElementById("yearA").value;
+      const yearB = document.getElementById("yearB").value;
+      const city = document.getElementById("city").value || "Abu Dhabi (example)";
+      const mode = document.querySelector('input[name="mode"]:checked').value;
 
+      // Map header
+      const left = document.getElementById("map-title-left");
+      const right = document.getElementById("map-title-right");
+      const center = document.getElementById("map-title-center");
+
+      if (mode === "change_detection") {
+        left.textContent = "Before (" + yearA + ")";
+        right.textContent = "After (" + yearB + ")";
+      } else if (mode === "single_year") {
+        left.textContent = "Single year (" + yearA + ")";
+        right.textContent = "";
+      } else {
+        left.textContent = "Start (" + yearA + ")";
+        right.textContent = "End (" + yearB + ")";
+      }
+      center.textContent = "Region: " + city;
+
+      // Bottom bar values
+      document.getElementById("bottom-mode").textContent = getModeText(mode);
+      document.getElementById("bottom-region").textContent = city;
+      document.getElementById("bottom-years").textContent = yearA + " → " + yearB;
+    }
+
+    document.getElementById("yearA").addEventListener("change", updateUI);
+    document.getElementById("yearB").addEventListener("change", updateUI);
+    document.getElementById("city").addEventListener("input", updateUI);
+    document.querySelectorAll('input[name="mode"]').forEach(r =>
+      r.addEventListener("change", updateUI)
+    );
+    updateUI();
+
+    // Simple front-end chat; replace with real backend call later
     function sendChat() {
-      const input = document.getElementById("chatInput");
+      const input = document.getElementById("chat-input");
       const text = input.value.trim();
       if (!text) return;
 
-      const chat = document.getElementById("chat");
+      const log = document.getElementById("chat-log");
 
-      // Add user bubble
-      const rowUser = document.createElement("div");
-      rowUser.className = "chat-row user";
-      rowUser.innerHTML = `
-        <div>
-          <div class="chat-meta" style="text-align:right;">You</div>
-          <div class="chat-bubble user">${text}</div>
-        </div>`;
-      chat.appendChild(rowUser);
+      // user bubble
+      const userRow = document.createElement("div");
+      userRow.className = "chat-row";
+      userRow.innerHTML = `
+        <div class="chat-meta" style="text-align:right;">You</div>
+        <div class="chat-bubble user">${text}</div>
+      `;
+      log.appendChild(userRow);
 
-      // Fake assistant reply (front-end only)
-      const rowAs = document.createElement("div");
-      rowAs.className = "chat-row assistant";
-      rowAs.innerHTML = `
-        <div>
-          <div class="chat-meta">Assistant</div>
-          <div class="chat-bubble assistant">
-            (Demo reply) In the real app, this message would come from your
-            Python/OpenAI backend based on the current map settings and Dynamic World data.
-          </div>
-        </div>`;
-      chat.appendChild(rowAs);
+      // placeholder assistant reply (here you would call FastAPI / Streamlit backend)
+      const asRow = document.createElement("div");
+      asRow.className = "chat-row";
+      asRow.innerHTML = `
+        <div class="chat-meta">Assistant</div>
+        <div class="chat-bubble assistant">
+          (Demo reply) In the real system this message would come from your Python
+          backend using the current mode, years (${document.getElementById("yearA").value}
+          → ${document.getElementById("yearB").value}), and region (“${document.getElementById("city").value || "Abu Dhabi"}”).
+        </div>
+      `;
+      log.appendChild(asRow);
 
-      chat.scrollTop = chat.scrollHeight;
+      log.scrollTop = log.scrollHeight;
       input.value = "";
     }
   </script>
