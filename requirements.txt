@@ -1,7 +1,6 @@
-streamlit
-earthengine-api
+fastapi
+uvicorn
 openai
-requests
-folium
-streamlit-folium
+earthengine-api
 geopy
+pydantic
