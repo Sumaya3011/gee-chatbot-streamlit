@@ -2,16 +2,22 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Dynamic World – Change Detection Dashboard</title>
+  <title>EarthMonitor – Dynamic World Change Detection</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <!-- Leaflet CSS (for the map) -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+    crossorigin=""
+  />
 
   <style>
     :root {
-      --bg-body: #020617;
+      --bg-main: #020617;
+      --bg-panel: #020617;
       --bg-nav: #020617;
-      --bg-sidebar: #020617;
-      --bg-card: #020617;
-      --bg-chat: #020617;
       --bg-bottom: #020617;
       --border-subtle: #1e293b;
       --accent: #2563eb;
@@ -22,14 +28,14 @@
     }
 
     * {
-      box-sizing: border-box;
       margin: 0;
       padding: 0;
+      box-sizing: border-box;
     }
 
     html, body {
       height: 100%;
-      background: var(--bg-body);
+      background: var(--bg-main);
       color: var(--text-main);
       font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
     }
@@ -37,7 +43,6 @@
     body {
       display: flex;
       justify-content: center;
-      padding: 0;
     }
 
     .app-shell {
@@ -48,8 +53,8 @@
       height: 100vh;
     }
 
-    /* TOP NAVBAR (EarthMonitor style) */
-    .top-nav {
+    /* TOP BAR (matches screenshot) */
+    header.top-bar {
       height: 64px;
       background: var(--bg-nav);
       border-bottom: 1px solid var(--border-subtle);
@@ -59,123 +64,132 @@
       padding: 0 24px;
     }
 
-    .brand {
+    .top-brand {
       display: flex;
       flex-direction: column;
       gap: 2px;
     }
 
-    .brand-title {
+    .top-brand-title {
       font-size: 18px;
       font-weight: 600;
-      letter-spacing: 0.02em;
     }
 
-    .brand-subtitle {
+    .top-brand-subtitle {
       font-size: 11px;
       color: var(--text-soft);
     }
 
-    .nav-right-text {
+    .top-right-text {
       font-size: 11px;
       color: var(--text-soft);
     }
 
-    /* MAIN LAYOUT */
-    .main-layout {
+    /* MAIN GRID: left panel + right area + bottom strip */
+    main.app-main {
       flex: 1;
       display: grid;
-      grid-template-columns: 300px minmax(0, 1fr);
+      grid-template-columns: 290px minmax(0, 1fr);
       grid-template-rows: minmax(0, 1fr) auto;
       grid-template-areas:
-        "sidebar map"
+        "sidebar right"
         "bottom bottom";
       column-gap: 16px;
       row-gap: 10px;
-      padding: 16px 24px 14px;
+      padding: 14px 24px 12px;
     }
 
-    /* SIDEBAR LEFT */
-    .sidebar {
+    @media (max-width: 1024px) {
+      main.app-main {
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-rows: auto minmax(0, 1fr) auto;
+        grid-template-areas:
+          "sidebar"
+          "right"
+          "bottom";
+      }
+    }
+
+    /* LEFT SIDEBAR */
+    aside.sidebar {
       grid-area: sidebar;
       display: flex;
       flex-direction: column;
       gap: 12px;
     }
 
-    .sidebar-card {
-      background: var(--bg-sidebar);
+    .monitor-box,
+    .chatbot-box {
+      background: var(--bg-panel);
       border-radius: 14px;
       border: 1px solid var(--border-subtle);
-      box-shadow: 0 18px 40px rgba(15, 23, 42, 0.85);
-      padding: 14px 14px 14px;
+      box-shadow: 0 18px 40px rgba(15, 23, 42, 0.9);
+      padding: 14px 14px 12px;
     }
 
-    .sidebar-section-title {
-      font-size: 12px;
+    /* Monitor Functions card */
+    .monitor-title {
+      font-size: 13px;
       font-weight: 600;
-      color: var(--text-main);
       margin-bottom: 6px;
     }
 
-    .sidebar-subtext {
+    .monitor-subtitle {
       font-size: 11px;
       color: var(--text-muted);
-      margin-bottom: 8px;
+      margin-bottom: 10px;
+    }
+
+    .monitor-radios {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .monitor-radio {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      cursor: pointer;
+    }
+
+    .monitor-radio input[type="radio"] {
+      width: 14px;
+      height: 14px;
+      accent-color: var(--accent);
     }
 
     label {
       font-size: 11px;
       color: var(--text-muted);
       display: block;
-      margin-bottom: 4px;
+      margin-bottom: 3px;
     }
 
-    /* Radio group (monitor functions style) */
-    .radio-list {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      margin-top: 4px;
-    }
-
-    .radio-item {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 13px;
-      color: var(--text-main);
-      cursor: pointer;
-    }
-
-    .radio-item input[type="radio"] {
-      accent-color: var(--accent);
-      width: 14px;
-      height: 14px;
-    }
-
-    /* Inputs */
-    input[type="text"], select {
-      width: 100%;
-      background: #020617;
-      color: var(--text-main);
-      border-radius: 10px;
-      border: 1px solid #111827;
-      padding: 6px 10px;
-      font-size: 12px;
-      outline: none;
-    }
-
-    input[type="text"]:focus,
-    select:focus {
-      border-color: var(--accent);
-      box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.5);
-    }
-
-    .years-row {
+    .year-row {
       display: flex;
       gap: 8px;
       margin-top: 6px;
+    }
+
+    select,
+    input[type="text"] {
+      width: 100%;
+      border-radius: 10px;
+      border: 1px solid #111827;
+      background: #020617;
+      color: var(--text-main);
+      font-size: 12px;
+      padding: 6px 10px;
+      outline: none;
+    }
+
+    select:focus,
+    input[type="text"]:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.5);
     }
 
     .field-caption {
@@ -184,277 +198,224 @@
       margin-top: 4px;
     }
 
-    .divider {
+    .monitor-divider {
       border-top: 1px solid #111827;
       margin: 10px 0 8px;
     }
 
-    /* ASSISTANT CARD (bottom left like screenshot) */
-    .assistant-card {
-      background: var(--bg-chat);
-      border-radius: 14px;
-      border: 1px solid var(--border-subtle);
-      box-shadow: 0 18px 35px rgba(15, 23, 42, 0.9);
-      padding: 12px 12px 10px;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-
-    .assistant-header {
+    /* Chatbot card (bottom left like screenshot) */
+    .chatbot-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      font-size: 12px;
+      margin-bottom: 6px;
+      font-size: 13px;
       font-weight: 600;
     }
 
-    .assistant-body {
-      background: #020617;
-      border-radius: 10px;
-      border: 1px solid #111827;
-      padding: 10px;
-      font-size: 12px;
-      color: var(--text-muted);
-      min-height: 60px;
+    .chatbot-header span {
+      font-size: 13px;
     }
 
-    .assistant-chat-log {
+    .chat-toggle {
+      background: none;
+      border: none;
+      color: var(--text-soft);
+      font-size: 16px;
+      cursor: pointer;
+      padding: 0;
+    }
+
+    .chat-messages {
       border-radius: 10px;
       border: 1px solid #111827;
       background: #020617;
       padding: 8px;
       height: 120px;
       overflow-y: auto;
-      margin-top: 4px;
+      font-size: 12px;
     }
 
-    .chat-row {
+    .message {
       margin-bottom: 6px;
     }
 
-    .chat-meta {
-      font-size: 10px;
-      color: #6b7280;
-      margin-bottom: 2px;
-    }
-
-    .chat-bubble {
-      font-size: 12px;
-      line-height: 1.4;
-      padding: 6px 8px;
-      border-radius: 10px;
-      max-width: 100%;
-      white-space: pre-wrap;
-    }
-
-    .chat-bubble.assistant {
+    .message.bot .bubble {
       background: #111827;
       color: #e5e7eb;
     }
 
-    .chat-bubble.user {
+    .message.user .bubble {
       background: #1d4ed8;
       color: #e5e7eb;
     }
 
-    .assistant-input-row {
-      display: flex;
-      gap: 6px;
-      margin-top: 6px;
+    .bubble {
+      padding: 6px 8px;
+      border-radius: 10px;
+      line-height: 1.4;
+      white-space: pre-wrap;
+      max-width: 100%;
     }
 
-    .assistant-input-row input {
+    .chat-form {
+      display: flex;
+      gap: 6px;
+      margin-top: 8px;
+    }
+
+    .chat-input {
       flex: 1;
-      font-size: 12px;
-      padding: 6px 8px;
       border-radius: 999px;
       border: 1px solid #111827;
       background: #020617;
       color: var(--text-main);
+      font-size: 12px;
+      padding: 6px 12px;
     }
 
-    .assistant-input-row input::placeholder {
+    .chat-input::placeholder {
       color: #6b7280;
     }
 
-    .primary-btn {
+    .chat-send {
       border-radius: 999px;
-      padding: 6px 12px;
+      border: none;
+      padding: 6px 14px;
       font-size: 12px;
       font-weight: 500;
       background: linear-gradient(135deg, #2563eb, #4f46e5);
-      border: none;
       color: #ffffff;
       cursor: pointer;
       white-space: nowrap;
     }
 
-    .primary-btn:hover {
+    .chat-send:hover {
       box-shadow: 0 8px 18px rgba(37, 99, 235, 0.55);
       transform: translateY(-0.5px);
     }
 
-    /* MAP AREA (center-right) */
-    .map-area {
-      grid-area: map;
+    /* RIGHT AREA: map + report */
+    .right-area {
+      grid-area: right;
       display: flex;
       flex-direction: column;
       gap: 8px;
-    }
-
-    .map-card {
-      background: var(--bg-card);
-      border-radius: 18px;
-      border: 1px solid var(--border-subtle);
-      box-shadow: 0 18px 40px rgba(15, 23, 42, 0.9);
-      padding: 12px 12px 10px;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      height: 100%;
     }
 
     .map-container {
+      position: relative;
       flex: 1;
       border-radius: 14px;
       overflow: hidden;
       border: 1px solid #111827;
-      background: #020617;
+      box-shadow: 0 18px 40px rgba(15, 23, 42, 0.9);
     }
 
-    /* Placeholder while you wire Folium/Leaflet */
-    .map-placeholder {
+    #map {
       width: 100%;
       height: 100%;
-      color: #4b5563;
-      font-size: 12px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
     }
 
-    .map-header-row {
-      display: flex;
-      justify-content: space-between;
-      font-size: 12px;
-      color: var(--text-muted);
-      padding: 0 2px;
+    .map-overlay-badge {
+      position: absolute;
+      bottom: 10px;
+      left: 10px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: rgba(15, 118, 110, 0.15);
+      border: 1px solid rgba(34, 197, 94, 0.8);
+      font-size: 10px;
+      color: #bbf7d0;
+      backdrop-filter: blur(6px);
     }
 
-    .map-header-main {
-      font-size: 13px;
-      font-weight: 500;
-      color: #e5e7eb;
-    }
-
-    /* BOTTOM BAR */
-    .bottom-bar {
-      grid-area: bottom;
+    /* Report & Analysis strip (inside right area, like screenshot) */
+    .report-analysis {
       background: var(--bg-bottom);
-      border-top: 1px solid var(--border-subtle);
-      padding: 10px 24px 8px;
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-
-    .bottom-title {
-      font-size: 12px;
-      font-weight: 600;
-      color: #e5e7eb;
-    }
-
-    .bottom-grid {
+      border-radius: 10px;
+      border: 1px solid var(--border-subtle);
+      padding: 10px 14px;
+      font-size: 11px;
       display: grid;
-      grid-template-columns: 200px 220px 220px minmax(0, 1fr);
-      gap: 16px;
-      font-size: 11px;
-      color: var(--text-muted);
+      grid-template-columns: 160px 210px 160px minmax(0, 1fr);
+      gap: 14px;
+      align-items: center;
     }
 
-    .bottom-label {
-      font-size: 11px;
+    .report-label {
+      font-size: 10px;
       text-transform: uppercase;
-      letter-spacing: 0.08em;
-      color: #9ca3af;
+      letter-spacing: 0.09em;
+      color: var(--text-soft);
       margin-bottom: 2px;
     }
 
-    .bottom-value-main {
+    .report-value {
       font-size: 12px;
-      font-weight: 500;
       color: #e5e7eb;
     }
 
-    .bottom-value-link {
-      font-size: 12px;
-      font-weight: 500;
+    .report-value.link {
       color: #38bdf8;
-      cursor: default;
     }
 
-    .bottom-analysis-text {
+    .report-text {
       font-size: 11px;
       color: var(--text-muted);
     }
 
-    @media (max-width: 1024px) {
-      .main-layout {
-        grid-template-columns: minmax(0, 1fr);
-        grid-template-rows: auto minmax(0, 1fr) auto;
-        grid-template-areas:
-          "sidebar"
-          "map"
-          "bottom";
+    @media (max-width: 900px) {
+      .report-analysis {
+        grid-template-columns: 1fr 1fr;
+        row-gap: 8px;
       }
     }
   </style>
 </head>
 <body>
   <div class="app-shell">
-    <!-- Top navbar -->
-    <header class="top-nav">
-      <div class="brand">
-        <div class="brand-title">EarthMonitor</div>
-        <div class="brand-subtitle">Dynamic World change detection</div>
+    <!-- TOP BAR -->
+    <header class="top-bar">
+      <div class="top-brand">
+        <div class="top-brand-title">EarthMonitor</div>
+        <div class="top-brand-subtitle">Real-time environmental monitoring</div>
       </div>
-      <div class="nav-right-text">
-        Google Earth Engine · OpenAI Assistant
+      <div class="top-right-text">
+        Dynamic World · Google Earth Engine · OpenAI Assistant
       </div>
     </header>
 
-    <!-- Main layout -->
-    <main class="main-layout">
+    <!-- MAIN CONTENT -->
+    <main class="app-main">
       <!-- LEFT SIDEBAR -->
       <aside class="sidebar">
-        <!-- Analysis modes -->
-        <section class="sidebar-card">
-          <div class="sidebar-section-title">Monitor Functions</div>
-          <div class="sidebar-subtext">
-            Choose how to explore the Dynamic World land cover.
+        <!-- Monitor Functions card -->
+        <section class="monitor-box">
+          <div class="monitor-title">Monitor Functions</div>
+          <div class="monitor-subtitle">
+            Choose how to explore changes in your region.
           </div>
 
-          <div class="radio-list">
-            <label class="radio-item">
+          <div class="monitor-radios">
+            <label class="monitor-radio">
               <input type="radio" name="mode" value="change_detection" checked />
               <span>Change Detection</span>
             </label>
-            <label class="radio-item">
+            <label class="monitor-radio">
               <input type="radio" name="mode" value="single_year" />
               <span>Single Year Map</span>
             </label>
-            <label class="radio-item">
+            <label class="monitor-radio">
               <input type="radio" name="mode" value="timeseries" />
               <span>Time Series</span>
             </label>
           </div>
 
-          <div class="divider"></div>
+          <div class="monitor-divider"></div>
 
-          <!-- Years -->
           <label>Years</label>
-          <div class="years-row">
+          <div class="year-row">
             <div style="flex:1;">
               <small class="field-caption">Year A (before / start)</small>
               <select id="yearA">
@@ -476,194 +437,206 @@
                 <option>2019</option>
                 <option>2020</option>
                 <option>2021</option>
-                <option>2022</option>
-                <option selected>2023</option>
+                <option selected>2022</option>
+                <option>2023</option>
                 <option>2024</option>
               </select>
             </div>
           </div>
 
-          <div class="field-caption">
-            These years should match the YEARS list in your Python config.
-          </div>
+          <div class="monitor-divider"></div>
 
-          <div class="divider"></div>
-
-          <!-- Location by city -->
           <label for="city">Region (city name)</label>
-          <input id="city" type="text" placeholder="Abu Dhabi, Dubai, Berlin..." />
-          <div class="field-caption" id="city-caption">
-            Backend: geocode city → update EE point + map.
+          <input
+            id="city"
+            type="text"
+            placeholder="Abu Dhabi, Dubai, Berlin..."
+          />
+          <div class="field-caption">
+            Backend: geocode this city → update Earth Engine point + map tiles.
           </div>
         </section>
 
-        <!-- Assistant card (chat) -->
-        <section class="assistant-card">
-          <div class="assistant-header">
+        <!-- Assistant / Chat card -->
+        <section class="chatbot-box">
+          <div class="chatbot-header">
             <span>Assistant</span>
-            <span style="font-size:10px;color:var(--text-soft);">Beta</span>
+            <button type="button" class="chat-toggle" aria-label="Toggle chat">
+              −
+            </button>
           </div>
 
-          <div class="assistant-body">
-            Hi! I’m your EarthMonitor assistant. Ask about land cover changes,
-            or tell me to swap years, reset the view, or analyse a specific city.
-          </div>
-
-          <div class="assistant-chat-log" id="chat-log">
-            <!-- initial assistant message -->
-            <div class="chat-row">
-              <div class="chat-meta">Assistant</div>
-              <div class="chat-bubble assistant">
-                Hi! I can help you explore Dynamic World land cover and update the map.
-
-                You can change the mode and years, then ask me to explain what changed.
+          <div class="chat-messages" id="chat-messages">
+            <div class="message bot">
+              <div class="bubble bot">
+                Hi! I can help you explore Dynamic World land cover and describe
+                the changes between your selected years and region.
               </div>
             </div>
           </div>
 
-          <div class="assistant-input-row">
+          <form class="chat-form" onsubmit="handleChatSubmit(event)">
             <input
-              id="chat-input"
               type="text"
-              placeholder='Ask about the map or type "swap years"...'
+              id="chat-input"
+              class="chat-input"
+              placeholder="Ask about the map or data..."
+              autocomplete="off"
             />
-            <button class="primary-btn" onclick="sendChat()">Send</button>
-          </div>
+            <button type="submit" class="chat-send">Send</button>
+          </form>
         </section>
       </aside>
 
-      <!-- MAP & VISUAL AREA -->
-      <section class="map-area">
-        <div class="map-card">
-          <div class="map-header-row">
-            <div class="map-header-main" id="map-title-left">Before (2020)</div>
-            <div id="map-title-center">Region: Abu Dhabi (example)</div>
-            <div class="map-header-main" id="map-title-right">After (2023)</div>
-          </div>
-
-          <div class="map-container" id="map-container">
-            <!-- When you integrate, inject your Folium / Leaflet map here -->
-            <div class="map-placeholder">
-              Map placeholder. In your app, this is the Folium / Leaflet map using
-              Earth Engine Dynamic World tiles.
-            </div>
-          </div>
+      <!-- RIGHT: map + report -->
+      <div class="right-area">
+        <div class="map-container">
+          <div id="map"></div>
+          <div class="map-overlay-badge">Live</div>
         </div>
-      </section>
 
-      <!-- BOTTOM REPORT BAR -->
-      <section class="bottom-bar">
-        <div class="bottom-title">Report &amp; Analysis</div>
-
-        <div class="bottom-grid">
+        <!-- Bottom report strip inside right panel -->
+        <section class="report-analysis">
           <div>
-            <div class="bottom-label">Current Mode</div>
-            <div class="bottom-value-main" id="bottom-mode">
+            <div class="report-label">Current layer</div>
+            <div class="report-value" id="report-layer">
               Change Detection
             </div>
           </div>
           <div>
-            <div class="bottom-label">Selected Region</div>
-            <div class="bottom-value-link" id="bottom-region">
+            <div class="report-label">Selected region</div>
+            <div class="report-value link" id="report-region">
               Abu Dhabi (example)
             </div>
           </div>
           <div>
-            <div class="bottom-label">Years</div>
-            <div class="bottom-value-main" id="bottom-years">
-              2020 → 2023
+            <div class="report-label">Years</div>
+            <div class="report-value" id="report-years">
+              2020 → 2022
             </div>
           </div>
           <div>
-            <div class="bottom-label">Summary</div>
-            <div class="bottom-analysis-text" id="bottom-summary">
-              Vegetation / land cover change explanation generated by the chatbot
-              would appear here, using Phase-1 statistics plus the current map
-              context.
+            <div class="report-label">Summary</div>
+            <div class="report-text" id="report-summary">
+              Change detection report will appear here. In the real app, this text
+              comes from your Python/OpenAI backend using the Phase-1 statistics and
+              the current map settings.
             </div>
           </div>
-        </div>
-      </section>
+        </section>
+      </div>
+
+      <!-- bottom area is visually this report bar; grid-area already "bottom" via main -->
     </main>
   </div>
 
-  <!-- Tiny JS to keep the UI in sync (front-end only) -->
+  <!-- Leaflet JS -->
+  <script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+    crossorigin=""
+  ></script>
+
   <script>
-    function getModeText(value) {
-      if (value === "change_detection") return "Change Detection";
-      if (value === "single_year") return "Single Year Map";
-      if (value === "timeseries") return "Time Series";
-      return value;
+    // --- MAP SETUP (Leaflet, dark theme just like screenshot) ---
+    const map = L.map("map").setView([26.3, 55.28], 3); // center somewhere nice
+
+    L.tileLayer(
+      "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
+      {
+        attribution:
+          '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> ' +
+          "&copy; <a href='https://carto.com/attributions'>CARTO</a>",
+        maxZoom: 19
+      }
+    ).addTo(map);
+
+    // In the real app you would add your EE Dynamic World tiles here using L.tileLayer(tileUrl, {...})
+
+    // --- UI SYNC: update bottom strip when mode / years / city change ---
+    function currentMode() {
+      const r = document.querySelector('input[name="mode"]:checked');
+      return r ? r.value : "change_detection";
     }
 
-    function updateUI() {
+    function modeToLabel(v) {
+      if (v === "change_detection") return "Change Detection";
+      if (v === "single_year") return "Single Year Map";
+      if (v === "timeseries") return "Time Series";
+      return v;
+    }
+
+    function refreshSummary() {
+      const mode = currentMode();
       const yearA = document.getElementById("yearA").value;
       const yearB = document.getElementById("yearB").value;
       const city = document.getElementById("city").value || "Abu Dhabi (example)";
-      const mode = document.querySelector('input[name="mode"]:checked').value;
 
-      // Map header
-      const left = document.getElementById("map-title-left");
-      const right = document.getElementById("map-title-right");
-      const center = document.getElementById("map-title-center");
+      document.getElementById("report-layer").textContent = modeToLabel(mode);
+      document.getElementById("report-region").textContent = city;
+      document.getElementById("report-years").textContent = yearA + " → " + yearB;
 
-      if (mode === "change_detection") {
-        left.textContent = "Before (" + yearA + ")";
-        right.textContent = "After (" + yearB + ")";
-      } else if (mode === "single_year") {
-        left.textContent = "Single year (" + yearA + ")";
-        right.textContent = "";
-      } else {
-        left.textContent = "Start (" + yearA + ")";
-        right.textContent = "End (" + yearB + ")";
-      }
-      center.textContent = "Region: " + city;
-
-      // Bottom bar values
-      document.getElementById("bottom-mode").textContent = getModeText(mode);
-      document.getElementById("bottom-region").textContent = city;
-      document.getElementById("bottom-years").textContent = yearA + " → " + yearB;
+      // This is just demo text; in real app you'll overwrite with backend response
+      document.getElementById("report-summary").textContent =
+        "Summary for " +
+        city +
+        " using " +
+        modeToLabel(mode) +
+        " between " +
+        yearA +
+        " and " +
+        yearB +
+        ". Connect this to your Python backend to insert the real analysis.";
     }
 
-    document.getElementById("yearA").addEventListener("change", updateUI);
-    document.getElementById("yearB").addEventListener("change", updateUI);
-    document.getElementById("city").addEventListener("input", updateUI);
-    document.querySelectorAll('input[name="mode"]').forEach(r =>
-      r.addEventListener("change", updateUI)
-    );
-    updateUI();
+    document.getElementById("yearA").addEventListener("change", refreshSummary);
+    document.getElementById("yearB").addEventListener("change", refreshSummary);
+    document.getElementById("city").addEventListener("input", refreshSummary);
+    document
+      .querySelectorAll('input[name="mode"]')
+      .forEach(r => r.addEventListener("change", refreshSummary));
 
-    // Simple front-end chat; replace with real backend call later
-    function sendChat() {
+    refreshSummary();
+
+    // --- CHAT HANDLING (front-end only; plug in your backend later) ---
+    function appendMessage(role, text) {
+      const container = document.getElementById("chat-messages");
+      const msg = document.createElement("div");
+      msg.className = "message " + role;
+      const bubble = document.createElement("div");
+      bubble.className = "bubble " + role;
+      bubble.textContent = text;
+      msg.appendChild(bubble);
+      container.appendChild(msg);
+      container.scrollTop = container.scrollHeight;
+    }
+
+    function handleChatSubmit(e) {
+      e.preventDefault();
       const input = document.getElementById("chat-input");
       const text = input.value.trim();
       if (!text) return;
 
-      const log = document.getElementById("chat-log");
+      appendMessage("user", text);
 
-      // user bubble
-      const userRow = document.createElement("div");
-      userRow.className = "chat-row";
-      userRow.innerHTML = `
-        <div class="chat-meta" style="text-align:right;">You</div>
-        <div class="chat-bubble user">${text}</div>
-      `;
-      log.appendChild(userRow);
+      // In real app you call your FastAPI / Streamlit endpoint here.
+      const mode = modeToLabel(currentMode());
+      const yearA = document.getElementById("yearA").value;
+      const yearB = document.getElementById("yearB").value;
+      const city = document.getElementById("city").value || "your region";
 
-      // placeholder assistant reply (here you would call FastAPI / Streamlit backend)
-      const asRow = document.createElement("div");
-      asRow.className = "chat-row";
-      asRow.innerHTML = `
-        <div class="chat-meta">Assistant</div>
-        <div class="chat-bubble assistant">
-          (Demo reply) In the real system this message would come from your Python
-          backend using the current mode, years (${document.getElementById("yearA").value}
-          → ${document.getElementById("yearB").value}), and region (“${document.getElementById("city").value || "Abu Dhabi"}”).
-        </div>
-      `;
-      log.appendChild(asRow);
+      const fakeReply =
+        "[Demo reply] I would now run " +
+        mode +
+        " for " +
+        city +
+        " between " +
+        yearA +
+        " and " +
+        yearB +
+        " using Dynamic World statistics and then write a detailed explanation.";
 
-      log.scrollTop = log.scrollHeight;
+      appendMessage("bot", fakeReply);
       input.value = "";
     }
   </script>
