@@ -34,29 +34,29 @@ st.markdown(
     <style>
     html, body, .stApp {
         height: 100vh;
-        overflow: hidden;
+        overflow: hidden;  /* keep one fixed page */
         background: radial-gradient(circle at top left, #020617, #020617 40%, #020617);
         font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
     }
 
     .block-container {
-        padding-top: 0.6rem;
-        padding-bottom: 0.6rem;
-        padding-left: 1.2rem;
-        padding-right: 1.2rem;
+        padding-top: 0.4rem;
+        padding-bottom: 0.4rem;
+        padding-left: 1.0rem;
+        padding-right: 1.0rem;
         max-width: 1400px;
-        height: 100%;
+        height: 100vh;  /* full viewport */
     }
 
     .app-shell {
         display: flex;
         flex-direction: row;
-        height: calc(100vh - 1.2rem);
+        height: 100%;   /* fill container */
         gap: 0.8rem;
         color: #e5e7eb;
     }
 
-    /* Sidebar (left) */
+    /* SIDEBAR (LEFT) */
     .sidebar-card {
         background: radial-gradient(circle at top left, #020617, #020617);
         border-radius: 18px;
@@ -98,7 +98,7 @@ st.markdown(
         background: radial-gradient(circle at top, #020617, #020617 40%, #020617);
         border: 1px solid rgba(51, 65, 85, 0.95);
         padding: 10px 11px 9px;
-        height: 260px;
+        height: 220px;  /* smaller so everything fits */
         display: flex;
         flex-direction: column;
     }
@@ -177,12 +177,12 @@ st.markdown(
         font-size: 12px;
     }
 
-    /* Map + main content (right) */
+    /* MAIN (RIGHT) */
     .main-column {
         height: 100%;
         display: flex;
         flex-direction: column;
-        gap: 0.6rem;
+        gap: 0.4rem;
     }
 
     .main-header {
@@ -247,14 +247,17 @@ st.markdown(
         border-radius: 20px;
         border: 1px solid rgba(30, 64, 175, 0.6);
         box-shadow: 0 22px 50px rgba(15, 23, 42, 0.9);
-        padding: 12px 12px 10px;
+        padding: 10px 12px 8px;
+        flex: 1;                     /* take remaining height */
+        display: flex;
+        flex-direction: column;
     }
 
     .map-header-row {
         display: grid;
         grid-template-columns: 1.3fr 1fr 1.3fr;
         align-items: center;
-        margin-bottom: 8px;
+        margin-bottom: 6px;
         font-size: 11px;
         color: #9ca3af;
     }
@@ -295,14 +298,14 @@ st.markdown(
     .metrics-row {
         display: grid;
         grid-template-columns: 1.1fr 0.9fr 1.1fr;
-        gap: 10px;
-        margin-top: 10px;
+        gap: 8px;
+        margin-top: 6px;
     }
 
     .metric-card {
         background: rgba(15,23,42,0.98);
         border-radius: 14px;
-        padding: 9px 11px;
+        padding: 7px 9px;
         border: 1px solid rgba(30, 64, 175, 0.6);
         font-size: 11px;
     }
@@ -310,7 +313,7 @@ st.markdown(
     .metric-label {
         font-size: 11px;
         color: #9ca3af;
-        margin-bottom: 4px;
+        margin-bottom: 3px;
     }
 
     .metric-value {
@@ -322,7 +325,7 @@ st.markdown(
     .metric-sub {
         font-size: 11px;
         color: #9ca3af;
-        margin-top: 2px;
+        margin-top: 1px;
     }
 
     button[title="View fullscreen"] {
@@ -471,13 +474,12 @@ def update_controls_from_text(text: str):
 # -------------------------
 st.markdown("<div class='app-shell'>", unsafe_allow_html=True)
 
-# ========== LEFT COLUMN: sidebar ==========
 left_col, right_col = st.columns([0.26, 0.74], gap="medium")
 
+# ========== LEFT COLUMN: SIDEBAR ==========
 with left_col:
     st.markdown("<div class='sidebar-card'>", unsafe_allow_html=True)
 
-    # Brand + "Data layers" header (visual only – settings are here)
     st.markdown(
         """
         <div style="display:flex;flex-direction:column;gap:6px;">
@@ -488,7 +490,7 @@ with left_col:
         unsafe_allow_html=True,
     )
 
-    # Analysis settings section
+    # Analysis settings
     st.markdown("<div class='sidebar-section'>", unsafe_allow_html=True)
     st.markdown(
         "<div class='sidebar-heading'>Mode &amp; Years</div>",
@@ -576,10 +578,7 @@ with left_col:
     )
     st.markdown("</div>", unsafe_allow_html=True)
 
-    # Spacer
-    st.markdown("<div style='flex:0 0 6px;'></div>", unsafe_allow_html=True)
-
-    # Chatbox
+    # Chat
     st.markdown("<div class='chat-box'>", unsafe_allow_html=True)
     st.markdown("<div class='chat-header'>Assistant</div>", unsafe_allow_html=True)
     st.markdown(
@@ -623,13 +622,10 @@ with left_col:
         )
         run_clicked = st.form_submit_button("▶ Run")
 
-    st.markdown("</div>", unsafe_allow_html=True)  # end chat-box
-    st.markdown("</div>", unsafe_allow_html=True)  # end sidebar-card
+    st.markdown("</div>", unsafe_allow_html=True)  # chat-box
+    st.markdown("</div>", unsafe_allow_html=True)  # sidebar-card
 
-# Handle chat submit AFTER layout so map reacts
-if "run_clicked_processed" not in st.session_state:
-    st.session_state["run_clicked_processed"] = False
-
+# Handle chat after sidebar so map reacts
 if run_clicked:
     if user_text.strip():
         user_msg = user_text.strip()
@@ -669,11 +665,11 @@ if run_clicked:
         {"role": "assistant", "content": reply}
     )
 
-# ========== RIGHT COLUMN: main content (header + map + metrics) ==========
+# ========== RIGHT COLUMN: MAIN AREA ==========
 with right_col:
     st.markdown("<div class='main-column'>", unsafe_allow_html=True)
 
-    # Header row similar to screenshot
+    # Header
     st.markdown(
         """
         <div class="main-header">
@@ -698,7 +694,7 @@ with right_col:
     ya = st.session_state["year_a"]
     yb = st.session_state["year_b"]
 
-    # Top mini-header inside card (Before / After / dates)
+    # Map header row inside card
     if af == "change_detection":
         st.markdown(
             f"""
@@ -736,7 +732,7 @@ with right_col:
             unsafe_allow_html=True,
         )
 
-    # Build map (logic unchanged)
+    # Map itself (logic unchanged)
     with st.spinner("Loading Dynamic World layers from Earth Engine..."):
         if af == "single_year":
             tile_urls = get_dw_tile_urls(location_point, ya, ya)
@@ -876,9 +872,10 @@ with right_col:
             folium.LayerControl(collapsed=False).add_to(m)
             add_dw_legend_to_map(m)
 
-    st_folium(m, height=430, use_container_width=True)
+    # Map height slightly smaller so page stays fixed
+    st_folium(m, height=360, use_container_width=True)
 
-    # Simple metric cards under the map (visual only, based on current selection)
+    # Metrics under map (visual only)
     if af == "change_detection":
         mode_label = "Change detection"
         summary = f"{ya} → {yb}"
@@ -891,7 +888,7 @@ with right_col:
 
     st.markdown(
         """
-        <div style="font-size:11px;color:#9ca3af;margin-top:8px;margin-bottom:4px;">
+        <div style="font-size:11px;color:#9ca3af;margin-top:6px;margin-bottom:3px;">
           Change Analysis
         </div>
         """,
