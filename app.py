@@ -8,6 +8,9 @@ import folium
 from folium.plugins import DualMap
 from streamlit_folium import st_folium
 
+from geopy.geocoders import Nominatim
+from geopy.exc import GeocoderUnavailable, GeocoderTimedOut
+
 from config import (
     YEARS,
     LOCATION_LAT,
@@ -18,6 +21,21 @@ from config import (
 )
 from gee_utils import get_dw_tile_urls
 from chat_utils import ask_chatbot
+
+
+# -------------------------
+# 0. HELPERS
+# -------------------------
+def get_initial_chat_history():
+    return [
+        {
+            "role": "assistant",
+            "content": (
+                "Hi! I can help you explore Dynamic World land cover and update the map.\n\n"
+                "You can change the function and years, then ask me to explain what changed."
+            ),
+        }
+    ]
 
 
 # -------------------------
@@ -171,7 +189,7 @@ st.markdown(
 
 
 # -------------------------
-# 2. SESSION STATE (LOGIC KEPT SAME, + LOCATION)
+# 2. SESSION STATE (LOGIC SAME + CITY-BASED LOCATION)
 # -------------------------
 if "analysis_function" not in st.session_state:
     st.session_state["analysis_function"] = "change_detection"
@@ -182,18 +200,11 @@ if "year_a" not in st.session_state:
 if "year_b" not in st.session_state:
     st.session_state["year_b"] = YEARS[max(0, len(YEARS) - 1)]
 
+# Chat history: new session = fresh chat
 if "chat_history" not in st.session_state:
-    st.session_state["chat_history"] = [
-        {
-            "role": "assistant",
-            "content": (
-                "Hi! I can help you explore Dynamic World land cover and update the map.\n\n"
-                "You can change the function and years, then ask me to explain what changed."
-            ),
-        }
-    ]
+    st.session_state["chat_history"] = get_initial_chat_history()
 
-# NEW: location in session state (defaults from config)
+# Location defaults from config
 if "location_name" not in st.session_state:
     st.session_state["location_name"] = LOCATION_NAME
 
@@ -202,6 +213,10 @@ if "location_lat" not in st.session_state:
 
 if "location_lon" not in st.session_state:
     st.session_state["location_lon"] = LOCATION_LON
+
+# City string for UI
+if "location_city" not in st.session_state:
+    st.session_state["location_city"] = LOCATION_NAME
 
 
 # -------------------------
@@ -374,9 +389,9 @@ left_col, right_col = st.columns([0.26, 0.74], gap="large")
 with left_col:
     st.markdown("<div class='sidebar-card'>", unsafe_allow_html=True)
 
-    # (1) DATA LAYERS SECTION REMOVED AS REQUESTED
+    # (1) DATA LAYERS SECTION REMOVED
 
-    # Analysis settings (logic identical, only style changed)
+    # Analysis settings (logic identical)
     st.markdown(
         "<div class='sidebar-section-title'>Analysis Settings</div>",
         unsafe_allow_html=True,
@@ -452,69 +467,85 @@ with left_col:
             )
             st.session_state["year_b"] = year_b
 
-    st.markdown(
-        "<div class='sidebar-subtext' style='margin-top:6px;'>"
-        "Use the controls below to pick the map location.</div>",
-        unsafe_allow_html=True,
-    )
-
     st.markdown("---")
 
-    # (2) LOCATION SELECTION (NEW)
+    # (2) LOCATION SELECTION BY CITY (NEW)
     st.markdown(
         "<div class='sidebar-section-title'>Location</div>",
         unsafe_allow_html=True,
     )
     st.markdown(
-        "<div class='sidebar-subtext'>Change the study area name and coordinates.</div>",
+        "<div class='sidebar-subtext'>Type a city and I will move the map to it.</div>",
         unsafe_allow_html=True,
     )
 
-    # Name
-    location_name_input = st.text_input(
-        "Location name",
-        value=st.session_state["location_name"],
+    city_input = st.text_input(
+        "City name",
+        value=st.session_state["location_city"],
+        placeholder="e.g. Abu Dhabi, Dubai, Berlin...",
     )
 
-    # Lat / Lon
-    col_lat, col_lon = st.columns(2)
-    with col_lat:
-        lat_input = st.number_input(
-            "Latitude",
-            value=float(st.session_state["location_lat"]),
-            format="%.6f",
-        )
-    with col_lon:
-        lon_input = st.number_input(
-            "Longitude",
-            value=float(st.session_state["location_lon"]),
-            format="%.6f",
+    col_loc_btn, col_loc_info = st.columns([0.55, 0.45])
+    with col_loc_btn:
+        use_city = st.button("📍 Use city", key="use_city_button")
+    with col_loc_info:
+        st.markdown(
+            f"<div class='sidebar-subtext'>Current center:<br>"
+            f"lat {st.session_state['location_lat']:.3f}, "
+            f"lon {st.session_state['location_lon']:.3f}</div>",
+            unsafe_allow_html=True,
         )
 
-    # Update session state
-    st.session_state["location_name"] = location_name_input.strip() or LOCATION_NAME
-    st.session_state["location_lat"] = lat_input
-    st.session_state["location_lon"] = lon_input
+    if use_city and city_input.strip():
+        try:
+            geolocator = Nominatim(user_agent="dw-change-app")
+            loc = geolocator.geocode(city_input.strip())
+            if loc:
+                st.session_state["location_lat"] = loc.latitude
+                st.session_state["location_lon"] = loc.longitude
+                st.session_state["location_name"] = city_input.strip()
+                st.session_state["location_city"] = city_input.strip()
+                st.success(
+                    f"Location set to {city_input.strip()} "
+                    f"({loc.latitude:.3f}, {loc.longitude:.3f})."
+                )
+            else:
+                st.warning("I couldn't find that city. Please check the spelling.")
+        except (GeocoderUnavailable, GeocoderTimedOut):
+            st.warning(
+                "Geocoding service is not available right now. "
+                "You can try again later or set coordinates manually in the code."
+            )
+        except Exception:
+            st.warning(
+                "Something went wrong while looking up the city. "
+                "Please try again or use another city."
+            )
 
     st.markdown(
         "<div class='sidebar-subtext' style='margin-top:4px;'>"
-        "The map and analysis will use this point as the center.</div>",
+        "The map and analysis use this city as the center.</div>",
         unsafe_allow_html=True,
     )
 
     st.markdown("---")
 
-    # Chatbot title
-    st.markdown(
-        "<div class='sidebar-section-title' style='margin-bottom:2px;'>Chatbot</div>",
-        unsafe_allow_html=True,
-    )
-    st.markdown(
-        "<div class='sidebar-subtext'>Ask about what changed or request map settings.</div>",
-        unsafe_allow_html=True,
-    )
+    # Chatbot title + reset button
+    top_chat_row = st.columns([0.6, 0.4])
+    with top_chat_row[0]:
+        st.markdown(
+            "<div class='sidebar-section-title' style='margin-bottom:2px;'>Chatbot</div>",
+            unsafe_allow_html=True,
+        )
+        st.markdown(
+            "<div class='sidebar-subtext'>Ask about changes or map settings.</div>",
+            unsafe_allow_html=True,
+        )
+    with top_chat_row[1]:
+        if st.button("↻ New chat", key="reset_chat_btn"):
+            st.session_state["chat_history"] = get_initial_chat_history()
 
-    # Chat history (unchanged logic)
+    # Chat history (logic same)
     st.markdown("<div class='chat-container'>", unsafe_allow_html=True)
     for msg in st.session_state["chat_history"]:
         if msg["role"] == "user":
@@ -644,7 +675,7 @@ with right_col:
 
     # MAP(S)
     with st.spinner("Loading Dynamic World layers from Earth Engine..."):
-        # location point for Earth Engine (now uses selected coordinates)
+        # location point for Earth Engine (now uses city-based coordinates)
         location_point = ee.Geometry.Point([current_lon, current_lat])
 
         if af == "single_year":
@@ -810,7 +841,7 @@ with right_col:
 
     with ca2:
         st.markdown("<div class='metric-card'>", unsafe_allow_html=True)
-        st.markmarkdown(
+        st.markdown(
             "<div class='metric-label'>Time Span</div>",
             unsafe_allow_html=True,
         )
