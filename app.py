@@ -616,48 +616,56 @@ def load_change_stats(path: Path) -> dict:
 
 
 def build_report_prompt(user_question: str, change_stats: dict, study_area: str) -> str:
-    """
-    Prompt inspired by your Phase-2 notebook:
-    - A) Change Detection
-    - B) Risk Analysis (Hazard / Exposure / Vulnerability / Risk scoring)
-    - C) Recommendations (Avoidance / Mitigation / Monitoring)
-    plus suggested questions.
-    """
     stats_blob = json.dumps(change_stats, indent=2)
-    return (
-        "You are a climate-risk analyst working inside an app called earthmonitor.\n"
-        "You receive:\n"
-        f"- Study area: {study_area}\n"
-        "- Change-detection statistics from satellite Dynamic World (JSON below)\n"
-        "- A user question.\n\n"
-        "Use ONLY the numbers in the JSON. Do NOT invent statistics or locations.\n"
-        "There is NO temperature data; any heatwave discussion must be qualitative.\n\n"
-        "CHANGE-STATS JSON:\n"
-        f"{stats_blob}\n\n"
-        "USER QUESTION:\n"
-        f"{user_question}\n\n"
-        "Write a MARKDOWN report with this structure:\n"
-        "### A) Change Detection\n"
-        "- Briefly describe the method (Dynamic World + pixel comparison).\n"
-        "- List key statistics (overall change %, water gain/loss, vegetation loss, etc.).\n"
-        "- Natural-language summary of main transitions (what changed, where/what classes).\n\n"
-        "### B) Risk Analysis (Heatwave)\n"
-        "1) Hazard – inferred from built-up increase and vegetation loss (state clearly that temperature is not available).\n"
-        "2) Exposure – which areas/classes are most exposed, using the transitions.\n"
-        "3) Vulnerability – which land-cover classes are high vs low vulnerability.\n"
-        "4) Risk scoring – explain a simple formula Risk = Hazard × Exposure × Vulnerability and give risk_level (low/medium/high) with justification.\n\n"
-        "### C) Recommendations (Decision Support)\n"
-        "Start with one intro paragraph: \"Based on the detected land-cover transitions and associated risk analysis, it is recommended to:\" then 3–5 bullet points.\n"
-        "Then three subsections:\n"
-        \"\"\"1) Avoidance Recommendations\n"
-        "2) Mitigation Recommendations\n"
-        "3) Monitoring Recommendations\"\"\"\n"
-        "Each subsection should have 2–4 concrete, data-informed bullets.\n\n"
-        "### Suggested questions\n"
-        "Finish with 3–6 bullet points with good follow-up questions the user could ask.\n"
-    )
 
+    return f"""
+You are a climate-risk analyst working inside an app called earthmonitor.
 
+You receive:
+- Study area: {study_area}
+- Change-detection statistics from satellite Dynamic World (JSON below)
+- A user question.
+
+Use ONLY the numbers in the JSON. Do NOT invent statistics or locations.
+There is NO temperature data; any heatwave discussion must be qualitative.
+
+CHANGE-STATS JSON:
+{stats_blob}
+
+USER QUESTION:
+{user_question}
+
+Write a MARKDOWN report with this structure:
+
+### A) Change Detection
+- Briefly describe the method (Dynamic World + pixel comparison).
+- List key statistics (overall change %, water gain/loss, vegetation loss, etc.).
+- Natural-language summary of main transitions.
+
+### B) Risk Analysis (Heatwave)
+1) Hazard – inferred from built-up increase and vegetation loss (state clearly that temperature is not available).
+2) Exposure – which areas/classes are most exposed.
+3) Vulnerability – which land-cover classes are high vs low vulnerability.
+4) Risk scoring – explain Risk = Hazard × Exposure × Vulnerability and give risk_level (low/medium/high) with justification.
+
+### C) Recommendations (Decision Support)
+
+Start with:
+"Based on the detected land-cover transitions and associated risk analysis, it is recommended to:"
+
+Then 3–5 bullet points.
+
+Then include exactly these subsections:
+
+1) Avoidance Recommendations
+2) Mitigation Recommendations
+3) Monitoring Recommendations
+
+Each subsection should contain 2–4 data-informed bullets.
+
+### Suggested questions
+End with 3–6 follow-up questions.
+"""
 def generate_change_report(user_question: str) -> str:
     """
     High-level helper:
