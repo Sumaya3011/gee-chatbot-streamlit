@@ -21,7 +21,7 @@ from chat_utils import ask_chatbot
 
 
 # -------------------------
-# 1. PAGE CONFIG & CSS (fixed one-page layout)
+# 1. PAGE CONFIG & CSS (user-friendly one-page layout)
 # -------------------------
 st.set_page_config(
     page_title="earthmonitor – Dynamic World Explorer",
@@ -34,7 +34,7 @@ st.markdown(
     <style>
     html, body, .stApp {
         height: 100vh;
-        overflow: hidden; /* prevent page scroll */
+        overflow: hidden;
     }
 
     .block-container {
@@ -44,7 +44,6 @@ st.markdown(
         height: 100%;
     }
 
-    /* Main container uses full height */
     .full-height-layout {
         display: flex;
         flex-direction: column;
@@ -61,7 +60,7 @@ st.markdown(
         background: #ffffff;
         border-radius: 18px;
         box-shadow: 0 18px 40px rgba(15, 23, 42, 0.16);
-        padding: 12px 14px 10px;
+        padding: 16px 18px 14px;
     }
 
     .stButton > button {
@@ -78,13 +77,12 @@ st.markdown(
         box-shadow: 0 12px 24px rgba(37, 99, 235, 0.45);
     }
 
-    /* Chat box: one fixed card with internal scroll for messages */
     .chat-box {
         border-radius: 14px;
-        background: #f9fafb;
-        border: 1px solid #e5e7eb;
-        padding: 8px;
-        height: 260px;           /* fixed height */
+        background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+        border: 1px solid #e2e8f0;
+        padding: 10px 12px;
+        height: 280px;
         display: flex;
         flex-direction: column;
     }
@@ -92,7 +90,9 @@ st.markdown(
     .chat-messages {
         flex: 1;
         overflow-y: auto;
-        margin-bottom: 6px;
+        margin-bottom: 8px;
+        padding-right: 4px;
+        scrollbar-width: thin;
     }
 
     .chat-bubble-user {
@@ -115,6 +115,25 @@ st.markdown(
         font-size: 13px;
         line-height: 1.4;
         white-space: pre-wrap;
+    }
+
+    .step-badge {
+        font-size: 10px;
+        padding: 3px 10px;
+        border-radius: 999px;
+        font-weight: 600;
+        letter-spacing: 0.02em;
+    }
+
+    .stRadio > div {
+        gap: 0.5rem;
+    }
+    .stSelectbox > div {
+        min-height: 2.25rem;
+    }
+    .stTextInput > div > input {
+        border-radius: 10px;
+        padding: 0.5rem 0.75rem;
     }
 
     button[title="View fullscreen"] {
@@ -143,7 +162,7 @@ if "chat_history" not in st.session_state:
         {
             "role": "assistant",
             "content": (
-                "Hi! I’m the earthmonitor assistant.\n\n"
+                "Hi! I'm the earthmonitor assistant.\n\n"
                 "I can update the map when you ask for different years or analyses.\n"
                 "Try things like:\n"
                 "- \"Show change between 2020 and 2024\"\n"
@@ -234,7 +253,6 @@ def add_dw_legend_to_map(m):
 def update_controls_from_text(text: str):
     t = text.lower()
 
-    # Function detection
     if "change" in t or "difference" in t:
         st.session_state["analysis_function"] = "change_detection"
     elif "time series" in t or "timeseries" in t or "timeline" in t:
@@ -242,7 +260,6 @@ def update_controls_from_text(text: str):
     elif "single year" in t or "only" in t:
         st.session_state["analysis_function"] = "single_year"
 
-    # Year detection
     found = re.findall(r"\b(19[0-9]{2}|20[0-9]{2})\b", t)
     years_found = sorted({int(y) for y in found if int(y) in YEARS})
 
@@ -266,20 +283,20 @@ def update_controls_from_text(text: str):
 # -------------------------
 st.markdown("<div class='full-height-layout'>", unsafe_allow_html=True)
 
-# Top: big brand header (earthmonitor)
+# Top: brand header
 st.markdown(
     """
-    <div style="text-align:center;margin-bottom:0.2rem;">
+    <div style="text-align:center;margin-bottom:0.5rem;">
       <div style="
-        font-size:34px;
+        font-size:36px;
         font-weight:800;
-        letter-spacing:0.18em;
+        letter-spacing:0.14em;
         text-transform:uppercase;
         color:#0f172a;
       ">
         earth<span style="color:#2563eb;">monitor</span>
       </div>
-      <div style="font-size:12px;color:#6b7280;margin-top:2px;">
+      <div style="font-size:13px;color:#64748b;margin-top:4px;">
         Dynamic World Land Cover Explorer
       </div>
     </div>
@@ -287,17 +304,16 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# Main content: two columns filling the rest of height
 left_col, right_col = st.columns([0.32, 0.68], gap="large")
 
-# ---------- LEFT: controls + chat in bottom box ----------
+# ---------- LEFT: controls + chat ----------
 with left_col:
     st.markdown("<div class='panel-card'>", unsafe_allow_html=True)
 
-    # --- Analysis settings card (top) ---
+    # Analysis settings card
     st.markdown(
-        "<div style='background:#f9fafb;border-radius:14px;"
-        "border:1px solid #e5e7eb;padding:8px 10px 8px;margin-bottom:8px;'>",
+        "<div style='background:#f8fafc;border-radius:14px;"
+        "border:1px solid #e2e8f0;padding:12px 14px 12px;margin-bottom:12px;'>",
         unsafe_allow_html=True,
     )
 
@@ -310,8 +326,7 @@ with left_col:
         )
     with pill_col:
         st.markdown(
-            "<div style='font-size:10px;padding:2px 8px;border-radius:999px;"
-            "background:#eef2ff;color:#4f46e5;text-align:right;'>"
+            "<div class='step-badge' style='background:#eef2ff;color:#4f46e5;text-align:right;'>"
             "Step 1 · Configure</div>",
             unsafe_allow_html=True,
         )
@@ -394,17 +409,20 @@ with left_col:
         unsafe_allow_html=True,
     )
 
-    st.markdown("</div>", unsafe_allow_html=True)  # end settings card
+    st.markdown("</div>", unsafe_allow_html=True)
 
-    # --- Chatbox: ONE fixed box at bottom-left ---
+    st.markdown("<div style='height:8px;'></div>", unsafe_allow_html=True)
+
+    # Chatbox
     st.markdown(
         "<div class='chat-box'>"
-        "<div style='font-size:12px;font-weight:600;color:#111827;margin-bottom:4px;'>"
-        "Chatbot</div>",
+        "<div style='font-size:12px;font-weight:600;color:#111827;margin-bottom:2px;'>"
+        "Chatbot</div>"
+        "<div style='font-size:10px;color:#64748b;margin-bottom:6px;'>"
+        "Ask for different years or analyses and the map updates.</div>",
         unsafe_allow_html=True,
     )
 
-    # Messages (scroll inside)
     st.markdown("<div class='chat-messages'>", unsafe_allow_html=True)
 
     for msg in st.session_state["chat_history"]:
@@ -434,9 +452,8 @@ with left_col:
             unsafe_allow_html=True,
         )
 
-    st.markdown("</div>", unsafe_allow_html=True)  # end chat-messages
+    st.markdown("</div>", unsafe_allow_html=True)
 
-    # Input + button still visually part of same "box"
     with st.form("chat_form", clear_on_submit=True):
         user_text = st.text_input(
             label="",
@@ -444,7 +461,7 @@ with left_col:
         )
         run_clicked = st.form_submit_button("▶ Run")
 
-    st.markdown("</div>", unsafe_allow_html=True)  # end chat-box
+    st.markdown("</div>", unsafe_allow_html=True)
 
     if run_clicked:
         if user_text.strip():
@@ -488,7 +505,7 @@ with left_col:
             {"role": "assistant", "content": reply}
         )
 
-    st.markdown("</div>", unsafe_allow_html=True)  # end left panel-card
+    st.markdown("</div>", unsafe_allow_html=True)
 
 
 # ---------- RIGHT: map panel ----------
@@ -501,6 +518,12 @@ with right_col:
 
     head_left, head_right = st.columns([0.6, 0.4])
     with head_left:
+        st.markdown(
+            "<div style='font-size:11px;background:#eef2ff;color:#4f46e5;"
+            "display:inline-block;padding:2px 8px;border-radius:999px;"
+            "font-weight:600;margin-bottom:4px;'>Step 2 · View map</div>",
+            unsafe_allow_html=True,
+        )
         st.markdown(
             "<div style='font-size:15px;font-weight:600;color:#111827;"
             "margin-bottom:2px;'>Interactive map</div>",
@@ -533,7 +556,6 @@ with right_col:
                 tiles=None,
             )
 
-            # LEFT: Year A
             folium.TileLayer(
                 tiles=(
                     "https://server.arcgisonline.com/ArcGIS/rest/services/"
@@ -555,7 +577,6 @@ with right_col:
                     opacity=0.9,
                 ).add_to(m.m1)
 
-            # RIGHT: Year B
             folium.TileLayer(
                 tiles=(
                     "https://server.arcgisonline.com/ArcGIS/rest/services/"
@@ -661,9 +682,8 @@ with right_col:
             folium.LayerControl(collapsed=False).add_to(m)
             add_dw_legend_to_map(m)
 
-    # Slightly smaller map height so page fits with no scroll
     st_folium(m, height=430, use_container_width=True)
 
-    st.markdown("</div>", unsafe_allow_html=True)  # end right panel-card
+    st.markdown("</div>", unsafe_allow_html=True)
 
-st.markdown("</div>", unsafe_allow_html=True)  # end full-height-layout
+st.markdown("</div>", unsafe_allow_html=True)
