@@ -104,22 +104,24 @@ st.markdown(
         color: #22c55e;
     }
 
-    /* Chat box – compact professional style */
-    .chat-box {
+    /* --- CHAT STYLING (container-based) --- */
+
+    /* Style the Streamlit container that holds the chat (identified via #chat-tag) */
+    div[data-testid="stVerticalBlock"]:has(p#chat-tag) {
         border-radius: 14px;
         background: radial-gradient(circle at top, #020617, #020617 40%, #020617);
         border: 1px solid rgba(51, 65, 85, 0.95);
         padding: 8px 9px 7px;
-        height: 190px;  /* compact */
+        height: 190px;                /* compact fixed height */
         display: flex;
         flex-direction: column;
+        gap: 4px;
     }
 
     .chat-header-row {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        margin-bottom: 4px;
     }
 
     .chat-header-title {
@@ -139,14 +141,14 @@ st.markdown(
     .chat-sub {
         font-size: 9px;
         color: #9ca3af;
-        margin-bottom: 5px;
     }
 
     .chat-messages {
         flex: 1;
         overflow-y: auto;
-        margin-bottom: 5px;
         padding-right: 2px;
+        margin-top: 3px;
+        margin-bottom: 3px;
         scrollbar-width: thin;
     }
 
@@ -177,8 +179,8 @@ st.markdown(
         margin-bottom: 1px;
     }
 
-    /* Make input + button match and stay INSIDE chat-box */
-    .chat-box .stTextInput>div>input {
+    /* Chat input + button inside that container */
+    div[data-testid="stVerticalBlock"]:has(p#chat-tag) .stTextInput > div > input {
         border-radius: 999px;
         padding: 0.25rem 0.6rem;
         background: #020617;
@@ -187,7 +189,7 @@ st.markdown(
         font-size: 11px;
     }
 
-    .chat-box .stButton>button {
+    div[data-testid="stVerticalBlock"]:has(p#chat-tag) .stButton > button {
         border-radius: 999px;
         padding: 0.25rem 0.7rem;
         font-size: 11px;
@@ -202,7 +204,6 @@ st.markdown(
         display: flex;
         align-items: center;
         gap: 6px;
-        margin-top: 2px;
     }
 
     /* Global buttons & inputs (outside chat) */
@@ -620,63 +621,64 @@ with left_col:
     )
     st.markdown("</div>", unsafe_allow_html=True)
 
-    # Chat – one compact box (messages + input inside)
-    st.markdown("<div class='chat-box'>", unsafe_allow_html=True)
-
-    st.markdown(
-        """
-        <div class="chat-header-row">
-          <div class="chat-header-title">Assistant</div>
-          <div class="chat-header-badge">earthmonitor</div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-    st.markdown(
-        "<div class='chat-sub'>Ask for years or modes and I’ll explain what the map shows.</div>",
-        unsafe_allow_html=True,
-    )
-
-    st.markdown("<div class='chat-messages'>", unsafe_allow_html=True)
-    for msg in st.session_state["chat_history"]:
-        if msg["role"] == "user":
-            align = "flex-end"
-            bubble_class = "chat-bubble-user"
-            name = "You"
-        else:
-            align = "flex-start"
-            bubble_class = "chat-bubble-assistant"
-            name = "Assistant"
+    # Chat – single container (box) with messages + input
+    chat_container = st.container()
+    with chat_container:
+        # marker so CSS can find this container
+        st.markdown('<p id="chat-tag"></p>', unsafe_allow_html=True)
 
         st.markdown(
-            f"""
-            <div style="display:flex;justify-content:{align};margin-bottom:4px;">
-              <div style="max-width:100%;">
-                <div class="chat-name" style="text-align:{'right' if msg['role']=='user' else 'left'};">
-                    {name}
-                </div>
-                <div class="{bubble_class}">
-                  {msg["content"]}
-                </div>
-              </div>
+            """
+            <div class="chat-header-row">
+              <div class="chat-header-title">Assistant</div>
+              <div class="chat-header-badge">earthmonitor</div>
             </div>
             """,
             unsafe_allow_html=True,
         )
-    st.markdown("</div>", unsafe_allow_html=True)  # close chat-messages
-
-    # Input + button INSIDE the same chat-box
-    col_input, col_btn = st.columns([4, 1])
-    with col_input:
-        user_text = st.text_input(
-            label="",
-            placeholder="e.g. change 2020 to 2024",
-            key="chat_input",
+        st.markdown(
+            "<div class='chat-sub'>Ask for years or modes and I’ll explain what the map shows.</div>",
+            unsafe_allow_html=True,
         )
-    with col_btn:
-        run_clicked = st.button("▶", key="chat_run")
 
-    st.markdown("</div>", unsafe_allow_html=True)  # close chat-box
+        st.markdown("<div class='chat-messages'>", unsafe_allow_html=True)
+        for msg in st.session_state["chat_history"]:
+            if msg["role"] == "user":
+                align = "flex-end"
+                bubble_class = "chat-bubble-user"
+                name = "You"
+            else:
+                align = "flex-start"
+                bubble_class = "chat-bubble-assistant"
+                name = "Assistant"
+
+            st.markdown(
+                f"""
+                <div style="display:flex;justify-content:{align};margin-bottom:4px;">
+                  <div style="max-width:100%;">
+                    <div class="chat-name" style="text-align:{'right' if msg['role']=='user' else 'left'};">
+                        {name}
+                    </div>
+                    <div class="{bubble_class}">
+                      {msg["content"]}
+                    </div>
+                  </div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+        st.markdown("</div>", unsafe_allow_html=True)  # close chat-messages
+
+        col_input, col_btn = st.columns([4, 1])
+        with col_input:
+            user_text = st.text_input(
+                label="",
+                placeholder="e.g. change 2020 to 2024",
+                key="chat_input",
+            )
+        with col_btn:
+            run_clicked = st.button("▶", key="chat_run")
+
     st.markdown("</div>", unsafe_allow_html=True)  # sidebar-card
 
 # Handle chat after sidebar so map reacts
@@ -719,8 +721,8 @@ if run_clicked:
     st.session_state["chat_history"].append(
         {"role": "assistant", "content": reply}
     )
-    # clear input for next question
-    st.session_state["chat_input"] = ""
+    st.session_state["chat_input"] = ""  # clear input
+
 
 # ========== RIGHT COLUMN: MAIN AREA ==========
 with right_col:
@@ -788,7 +790,7 @@ with right_col:
             unsafe_allow_html=True,
         )
 
-    # Map logic (unchanged)
+    # Map logic
     with st.spinner("Loading Dynamic World layers from Earth Engine..."):
         if af == "single_year":
             tile_urls = get_dw_tile_urls(location_point, ya, ya)
