@@ -92,62 +92,114 @@ st.markdown(
         margin-bottom: 2px;
     }
 
-    /* Chat box */
+    .brand-logo {
+        font-size: 15px;
+        font-weight: 700;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: #f9fafb;
+    }
+
+    .brand-logo span {
+        color: #22c55e;
+    }
+
+    /* Chat box – compact professional style */
     .chat-box {
         border-radius: 14px;
         background: radial-gradient(circle at top, #020617, #020617 40%, #020617);
         border: 1px solid rgba(51, 65, 85, 0.95);
-        padding: 10px 11px 9px;
-        height: 220px;  /* smaller so everything fits */
+        padding: 8px 9px 7px;
+        height: 190px;  /* compact */
         display: flex;
         flex-direction: column;
     }
 
-    .chat-header {
-        font-size: 12px;
+    .chat-header-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 4px;
+    }
+
+    .chat-header-title {
+        font-size: 11px;
         font-weight: 600;
         color: #e5e7eb;
-        margin-bottom: 2px;
+    }
+
+    .chat-header-badge {
+        font-size: 10px;
+        padding: 2px 9px;
+        border-radius: 999px;
+        border: 1px solid rgba(55,65,81,0.95);
+        color: #9ca3af;
     }
 
     .chat-sub {
-        font-size: 10px;
+        font-size: 9px;
         color: #9ca3af;
-        margin-bottom: 6px;
+        margin-bottom: 5px;
     }
 
     .chat-messages {
         flex: 1;
         overflow-y: auto;
-        margin-bottom: 6px;
-        padding-right: 4px;
+        margin-bottom: 5px;
+        padding-right: 2px;
         scrollbar-width: thin;
     }
 
+    .chat-bubble-user,
+    .chat-bubble-assistant {
+        max-width: 90%;
+        padding: 6px 8px;
+        border-radius: 10px;
+        font-size: 11px;
+        line-height: 1.35;
+        white-space: pre-wrap;
+    }
+
     .chat-bubble-user {
-        max-width: 94%;
-        padding: 8px 10px;
-        border-radius: 12px;
         background: linear-gradient(135deg, #22c55e, #16a34a);
         color: #f9fafb;
-        font-size: 12px;
-        line-height: 1.4;
-        white-space: pre-wrap;
     }
 
     .chat-bubble-assistant {
-        max-width: 94%;
-        padding: 8px 10px;
-        border-radius: 12px;
         background: rgba(15, 23, 42, 0.96);
         border: 1px solid rgba(55, 65, 81, 0.95);
         color: #e5e7eb;
-        font-size: 12px;
-        line-height: 1.4;
-        white-space: pre-wrap;
     }
 
-    /* Buttons & inputs */
+    .chat-name {
+        font-size: 9px;
+        color: #6b7280;
+        margin-bottom: 1px;
+    }
+
+    .chat-input-row {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin-top: 2px;
+    }
+
+    .chat-input-row .stTextInput>div>input {
+        border-radius: 999px;
+        padding: 0.25rem 0.6rem;
+        background: #020617;
+        border: 1px solid #1e293b;
+        color: #e5e7eb;
+        font-size: 11px;
+    }
+
+    .chat-input-row .stButton>button {
+        padding: 0.25rem 0.7rem;
+        font-size: 11px;
+        box-shadow: 0 8px 20px rgba(22, 163, 74, 0.55);
+    }
+
+    /* Buttons & other inputs */
     .stButton > button {
         border-radius: 999px;
         padding: 0.35rem 0.9rem;
@@ -156,7 +208,6 @@ st.markdown(
         background: linear-gradient(135deg, #22c55e, #16a34a);
         border: none;
         color: #f9fafb;
-        box-shadow: 0 12px 30px rgba(22, 163, 74, 0.55);
     }
     .stButton > button:hover {
         box-shadow: 0 18px 40px rgba(22, 163, 74, 0.75);
@@ -228,18 +279,6 @@ st.markdown(
     .title-sub {
         font-size: 11px;
         color: #9ca3af;
-    }
-
-    .brand-logo {
-        font-size: 15px;
-        font-weight: 700;
-        letter-spacing: 0.16em;
-        text-transform: uppercase;
-        color: #f9fafb;
-    }
-
-    .brand-logo span {
-        color: #22c55e;
     }
 
     .map-card {
@@ -353,12 +392,9 @@ if "chat_history" not in st.session_state:
         {
             "role": "assistant",
             "content": (
-                "Hi! I'm the earthmonitor assistant.\n\n"
-                "I can update the map when you ask for different years or analyses.\n"
-                "Try things like:\n"
-                "- \"Show change between 2020 and 2024\"\n"
-                "- \"Single year 2022\"\n"
-                "- \"Time series from 2020 to 2024\""
+                "Hi, I'm the earthmonitor assistant.\n"
+                "Ask me to show change between two years, a single year, "
+                "or a time series (e.g., \"change 2020 to 2024\")."
             ),
         }
     ]
@@ -578,11 +614,20 @@ with left_col:
     )
     st.markdown("</div>", unsafe_allow_html=True)
 
-    # Chat
+    # Chat – compact card
     st.markdown("<div class='chat-box'>", unsafe_allow_html=True)
-    st.markdown("<div class='chat-header'>Assistant</div>", unsafe_allow_html=True)
+
     st.markdown(
-        "<div class='chat-sub'>Ask for different years or modes and I’ll explain what the map shows.</div>",
+        """
+        <div class="chat-header-row">
+          <div class="chat-header-title">Assistant</div>
+          <div class="chat-header-badge">earthmonitor</div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+    st.markdown(
+        "<div class='chat-sub'>Ask for years or modes and I’ll explain what the map shows.</div>",
         unsafe_allow_html=True,
     )
 
@@ -599,10 +644,9 @@ with left_col:
 
         st.markdown(
             f"""
-            <div style="display:flex;justify-content:{align};margin-bottom:5px;">
-              <div>
-                <div style="font-size:9px;color:#6b7280;margin-bottom:2px;
-                            text-align:{'right' if msg['role']=='user' else 'left'};">
+            <div style="display:flex;justify-content:{align};margin-bottom:4px;">
+              <div style="max-width:100%;">
+                <div class="chat-name" style="text-align:{'right' if msg['role']=='user' else 'left'};">
                     {name}
                 </div>
                 <div class="{bubble_class}">
@@ -613,19 +657,27 @@ with left_col:
             """,
             unsafe_allow_html=True,
         )
-    st.markdown("</div>", unsafe_allow_html=True)
+    st.markdown("</div>", unsafe_allow_html=True)  # close chat-messages
 
+    # Input + button on one row
     with st.form("chat_form", clear_on_submit=True):
-        user_text = st.text_input(
-            label="",
-            placeholder="e.g. change between 2020 and 2024",
-        )
-        run_clicked = st.form_submit_button("▶ Run")
+        col_input, col_btn = st.columns([4, 1])
+        with col_input:
+            user_text = st.text_input(
+                label="",
+                placeholder="e.g. change 2020 to 2024",
+                key="chat_input",
+            )
+        with col_btn:
+            run_clicked = st.form_submit_button("▶")
 
-    st.markdown("</div>", unsafe_allow_html=True)  # chat-box
+    st.markdown("</div>", unsafe_allow_html=True)  # close chat-box
     st.markdown("</div>", unsafe_allow_html=True)  # sidebar-card
 
 # Handle chat after sidebar so map reacts
+if "run_clicked" not in st.session_state:
+    st.session_state["run_clicked"] = False
+
 if run_clicked:
     if user_text.strip():
         user_msg = user_text.strip()
@@ -694,7 +746,6 @@ with right_col:
     ya = st.session_state["year_a"]
     yb = st.session_state["year_b"]
 
-    # Map header row inside card
     if af == "change_detection":
         st.markdown(
             f"""
@@ -732,7 +783,7 @@ with right_col:
             unsafe_allow_html=True,
         )
 
-    # Map itself (logic unchanged)
+    # Map logic unchanged
     with st.spinner("Loading Dynamic World layers from Earth Engine..."):
         if af == "single_year":
             tile_urls = get_dw_tile_urls(location_point, ya, ya)
@@ -872,10 +923,9 @@ with right_col:
             folium.LayerControl(collapsed=False).add_to(m)
             add_dw_legend_to_map(m)
 
-    # Map height slightly smaller so page stays fixed
     st_folium(m, height=360, use_container_width=True)
 
-    # Metrics under map (visual only)
+    # Metrics under map
     if af == "change_detection":
         mode_label = "Change detection"
         summary = f"{ya} → {yb}"
